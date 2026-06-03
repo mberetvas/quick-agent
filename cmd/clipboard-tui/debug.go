@@ -15,6 +15,7 @@ import (
 	"github.com/yourname/clipboard-tui/internal/hotkey"
 	"github.com/yourname/clipboard-tui/internal/llm"
 	"github.com/yourname/clipboard-tui/internal/llm/ollama"
+	"github.com/yourname/clipboard-tui/internal/llm/openrouter"
 	"github.com/yourname/clipboard-tui/internal/terminal"
 )
 
@@ -79,7 +80,11 @@ var watchClipboardCmd = &cobra.Command{
 	},
 }
 
-var debugLLMTemplate string
+var (
+	debugLLMTemplate string
+	debugLLMBackend  string
+)
+
 var testLLMCmd = &cobra.Command{
 	Use:   "llm <text>",
 	Short: "Send a sample text prompt directly to the LLM and stream the response",
@@ -92,12 +97,22 @@ var testLLMCmd = &cobra.Command{
 
 		inputText := strings.Join(args, " ")
 
+		backend := cfg.Backend
+		if cmd.Flags().Changed("backend") {
+			backend = debugLLMBackend
+		}
+
 		var client llm.LLMClient
-		switch cfg.Backend {
+		var healthTarget string
+		switch backend {
 		case "ollama":
 			client = ollama.NewClient(cfg.Ollama)
+			healthTarget = cfg.Ollama.URL
+		case "openrouter":
+			client = openrouter.NewClient(cfg.OpenRouter, cfg.LLM)
+			healthTarget = "https://openrouter.ai/api/v1"
 		default:
-			return fmt.Errorf("unsupported backend configuration: %s", cfg.Backend)
+			return fmt.Errorf("unsupported backend: %s (use ollama or openrouter)", backend)
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -113,7 +128,7 @@ var testLLMCmd = &cobra.Command{
 		}()
 
 		// 1. Healthcheck verification first
-		fmt.Printf("Performing healthcheck on backend '%s' (%s)...\n", cfg.Backend, cfg.Ollama.URL)
+		fmt.Printf("Performing healthcheck on backend '%s' (%s)...\n", backend, healthTarget)
 		if err := client.HealthCheck(ctx); err != nil {
 			return fmt.Errorf("pre-generation LLM healthcheck failed: %w", err)
 		}
@@ -256,6 +271,7 @@ var debugSpawnTerminalCmd = &cobra.Command{
 
 func init() {
 	testLLMCmd.Flags().StringVar(&debugLLMTemplate, "template", "refine", "Select prompt template: refine, translate, summarize, explain, custom")
+	testLLMCmd.Flags().StringVar(&debugLLMBackend, "backend", "", "Override config backend (ollama or openrouter)")
 	debugSpawnTerminalCmd.Flags().StringVar(&spawnTerminalCommand, "command", "", "Shell one-liner to run in the new terminal (required)")
 	debugSpawnTerminalCmd.Flags().StringVar(&spawnTerminalEmulator, "emulator", "", "Override terminal.emulator for this invocation")
 	_ = debugSpawnTerminalCmd.MarkFlagRequired("command")
