@@ -20,6 +20,7 @@ type Config struct {
 	LLM        LLMConfig        `json:"llm"`
 	Logging    LoggingConfig    `json:"logging"`
 	Daemon     DaemonConfig     `json:"daemon"`
+	Terminal   TerminalConfig   `json:"terminal"`
 }
 
 // OllamaConfig holds configuration details for the Ollama backend
@@ -80,6 +81,12 @@ type LoggingConfig struct {
 type DaemonConfig struct {
 	PIDFile   string `json:"pid_file"`
 	AutoStart bool   `json:"auto_start"`
+}
+
+// TerminalConfig selects the terminal emulator used to spawn the TUI.
+type TerminalConfig struct {
+	Emulator    string `json:"emulator"`     // "auto" or profile id: wt, cmd, terminal, gnome-terminal, ...
+	FallbackDir string `json:"fallback_dir"` // empty = default under GetConfigDir()/output
 }
 
 // DefaultOllamaConfig returns a default Ollama configuration
@@ -169,6 +176,14 @@ func DefaultLoggingConfig() LoggingConfig {
 	}
 }
 
+// DefaultTerminalConfig returns default terminal emulator settings.
+func DefaultTerminalConfig() TerminalConfig {
+	return TerminalConfig{
+		Emulator:    "auto",
+		FallbackDir: filepath.Join(GetConfigDir(), "output"),
+	}
+}
+
 // DefaultDaemonConfig returns a platform-specific default daemon configuration
 func DefaultDaemonConfig() DaemonConfig {
 	home := os.Getenv("HOME")
@@ -195,6 +210,7 @@ func Default() *Config {
 		LLM:        DefaultLLMConfig(),
 		Logging:    DefaultLoggingConfig(),
 		Daemon:     DefaultDaemonConfig(),
+		Terminal:   DefaultTerminalConfig(),
 	}
 }
 

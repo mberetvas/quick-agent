@@ -111,6 +111,9 @@ func LoadWithEnv(customPath string) (*Config, error) {
 	if level := os.Getenv("CLIPBOARD_TUI_LOG_LEVEL"); level != "" {
 		cfg.Logging.Level = level
 	}
+	if term := os.Getenv("CLIPBOARD_TUI_TERMINAL"); term != "" {
+		cfg.Terminal.Emulator = term
+	}
 
 	// Validate the fully resolved configuration
 	if err := cfg.Validate(); err != nil {

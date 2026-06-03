@@ -64,6 +64,11 @@
   "daemon": {
     "pid_file": "~/.config/clipboard-tui/daemon.pid",
     "auto_start": true
+  },
+
+  "terminal": {
+    "emulator": "auto",
+    "fallback_dir": ""
   }
 }
 ```
@@ -96,6 +101,7 @@ type Config struct {
     LLM LLMConfig `json:"llm"`
     Logging LoggingConfig `json:"logging"`
     Daemon DaemonConfig `json:"daemon"`
+    Terminal TerminalConfig `json:"terminal"`
 }
 
 func Default() *Config {
@@ -110,6 +116,7 @@ func Default() *Config {
         LLM: DefaultLLMConfig(),
         Logging: DefaultLoggingConfig(),
         Daemon: DefaultDaemonConfig(),
+        Terminal: DefaultTerminalConfig(),
     }
 }
 
@@ -280,7 +287,21 @@ func DefaultDaemonConfig() DaemonConfig {
         AutoStart: true,
     }
 }
+
+type TerminalConfig struct {
+    Emulator    string `json:"emulator"`     // "auto" or profile id
+    FallbackDir string `json:"fallback_dir"` // empty uses GetConfigDir()/output
+}
+
+func DefaultTerminalConfig() TerminalConfig {
+    return TerminalConfig{
+        Emulator:    "auto",
+        FallbackDir: filepath.Join(GetConfigDir(), "output"),
+    }
+}
 ```
+
+Environment: `CLIPBOARD_TUI_TERMINAL` overrides `terminal.emulator` when set (see [02-terminal-spawner.md](implementations/phase2/02-terminal-spawner.md)).
 
 ---
 

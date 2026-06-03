@@ -89,7 +89,44 @@ func (cfg *Config) Validate() error {
 		return errors.New("logging max_backups cannot be negative")
 	}
 
+	if err := cfg.Terminal.validate(); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (t TerminalConfig) validate() error {
+	if t.Emulator == "" {
+		return errors.New("terminal.emulator must not be empty")
+	}
+	if t.Emulator == "auto" {
+		return nil
+	}
+	for _, id := range validTerminalEmulators() {
+		if t.Emulator == id {
+			return nil
+		}
+	}
+	return fmt.Errorf("invalid terminal.emulator %q for %s", t.Emulator, runtime.GOOS)
+}
+
+func validTerminalEmulators() []string {
+	switch runtime.GOOS {
+	case "windows":
+		return []string{"wt", "powershell", "cmd"}
+	case "darwin":
+		return []string{"terminal", "iterm"}
+	default:
+		return []string{
+			"x-terminal-emulator",
+			"gnome-terminal",
+			"konsole",
+			"xfce4-terminal",
+			"alacritty",
+			"kitty",
+		}
+	}
 }
 
 // CheckPermissions verifies config directory has secure permissions (0700).

@@ -44,6 +44,14 @@ func TestDefaultConfig(t *testing.T) {
 		t.Errorf("default tui theme mismatch, got '%s'", cfg.TUI.Theme)
 	}
 
+	if cfg.Terminal.Emulator != "auto" {
+		t.Errorf("default terminal emulator mismatch, got '%s'", cfg.Terminal.Emulator)
+	}
+	expectedFallback := filepath.Join(GetConfigDir(), "output")
+	if cfg.Terminal.FallbackDir != expectedFallback {
+		t.Errorf("default terminal fallback_dir = %q, want %q", cfg.Terminal.FallbackDir, expectedFallback)
+	}
+
 	// Default config must pass validation
 	if err := cfg.Validate(); err != nil {
 		t.Errorf("default config is invalid: %v", err)
@@ -185,6 +193,20 @@ func TestConfigValidation(t *testing.T) {
 			name: "negative logging backups",
 			mutate: func(c *Config) {
 				c.Logging.MaxBackups = -5
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty terminal emulator",
+			mutate: func(c *Config) {
+				c.Terminal.Emulator = ""
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid terminal emulator",
+			mutate: func(c *Config) {
+				c.Terminal.Emulator = "nonexistent"
 			},
 			wantErr: true,
 		},
