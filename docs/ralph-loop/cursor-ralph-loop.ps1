@@ -321,7 +321,7 @@ $issueContent
 
     if ($streamProgress) {
         $agentArgs += @(
-            '--output-format', 'stream-json',
+            '--output-format', 'text',
             '--stream-partial-output'
         )
     }

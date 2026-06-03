@@ -15,6 +15,7 @@ import (
 	"github.com/yourname/clipboard-tui/internal/hotkey"
 	"github.com/yourname/clipboard-tui/internal/llm"
 	"github.com/yourname/clipboard-tui/internal/llm/ollama"
+	"github.com/yourname/clipboard-tui/internal/terminal"
 )
 
 var debugCmd = &cobra.Command{
@@ -212,10 +213,56 @@ var debugHotkeyCmd = &cobra.Command{
 	},
 }
 
+var (
+	spawnTerminalCommand string
+	spawnTerminalEmulator string
+)
+
+var debugSpawnTerminalCmd = &cobra.Command{
+	Use:   "spawn-terminal",
+	Short: "Open a new terminal window running a shell command",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if spawnTerminalCommand == "" {
+			return fmt.Errorf("--command is required")
+		}
+
+		cfg, err := config.LoadWithEnv(configPath)
+		if err != nil {
+			return fmt.Errorf("failed to load configuration: %w", err)
+		}
+
+		if spawnTerminalEmulator != "" {
+			cfg.Terminal.Emulator = spawnTerminalEmulator
+			if err := cfg.Validate(); err != nil {
+				return fmt.Errorf("invalid --emulator: %w", err)
+			}
+		}
+
+		inner := terminal.BuildDebugInnerCommand(spawnTerminalCommand)
+		spawner := terminal.NewSpawner(cfg.Terminal)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		profileID, err := spawner.Spawn(ctx, inner)
+		if err != nil {
+			return fmt.Errorf("spawn terminal: %w", err)
+		}
+
+		fmt.Printf("Spawned using terminal profile: %s\n", profileID)
+		return nil
+	},
+}
+
 func init() {
 	testLLMCmd.Flags().StringVar(&debugLLMTemplate, "template", "refine", "Select prompt template: refine, translate, summarize, explain, custom")
+	debugSpawnTerminalCmd.Flags().StringVar(&spawnTerminalCommand, "command", "", "Shell one-liner to run in the new terminal (required)")
+	debugSpawnTerminalCmd.Flags().StringVar(&spawnTerminalEmulator, "emulator", "", "Override terminal.emulator for this invocation")
+	_ = debugSpawnTerminalCmd.MarkFlagRequired("command")
+
 	debugCmd.AddCommand(watchClipboardCmd)
 	debugCmd.AddCommand(testLLMCmd)
 	debugCmd.AddCommand(debugHotkeyCmd)
+	debugCmd.AddCommand(debugSpawnTerminalCmd)
 	rootCmd.AddCommand(debugCmd)
 }
