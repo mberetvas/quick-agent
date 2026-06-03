@@ -55,8 +55,30 @@ func TestBuildTUIInnerCommand_windows(t *testing.T) {
 		t.Skip("windows quoting")
 	}
 	got := BuildTUIInnerCommand(`C:\Program Files\clipboard-tui.exe`, `C:\Temp Files\input.txt`)
-	want := `"C:\Program Files\clipboard-tui.exe" tui < "C:\Temp Files\input.txt"`
+	want := `cmd /c "\"C:\Program Files\clipboard-tui.exe\" tui < \"C:\Temp Files\input.txt\""`
 	if got != want {
 		t.Errorf("BuildTUIInnerCommand() = %q, want %q", got, want)
+	}
+}
+
+func TestBuildTUIInnerCommand_windows_no_spaces(t *testing.T) {
+	if goos != "windows" {
+		t.Skip("windows quoting")
+	}
+	got := BuildTUIInnerCommand(`C:\bin\clipboard-tui.exe`, `C:\Temp\input.txt`)
+	want := `cmd /c "C:\bin\clipboard-tui.exe tui < C:\Temp\input.txt"`
+	if got != want {
+		t.Errorf("BuildTUIInnerCommand() = %q, want %q", got, want)
+	}
+}
+
+func TestBuildDebugInnerCommand_windows(t *testing.T) {
+	if goos != "windows" {
+		t.Skip("windows only")
+	}
+	got := BuildDebugInnerCommand("echo hello")
+	want := "cmd /c echo hello"
+	if got != want {
+		t.Errorf("BuildDebugInnerCommand() = %q, want %q", got, want)
 	}
 }

@@ -261,17 +261,17 @@ Target: ~70% coverage on `internal/terminal` (command construction heavy, exec l
 
 ## Acceptance criteria
 
-- [ ] `TerminalConfig` on `Config` with defaults, validation, and `CLIPBOARD_TUI_TERMINAL` env override
-- [ ] `internal/terminal` with `Spawner`, `Spawn`, `SpawnTUI`, `ErrNoTerminal`, `ErrUsedFallback`
-- [ ] Auto-detect + explicit `terminal.emulator` for Windows (`wt`, `powershell`, `cmd`), macOS (`terminal`, `iterm`), Linux (≥4 emulators from table above)
-- [ ] `SpawnTUI` uses temp-file stdin redirect compatible with existing `tui` stdin handling
-- [ ] `fallback.go` on `SpawnTUI` failure; configurable `fallback_dir`
-- [ ] `clipboard-tui debug spawn-terminal --command "echo hello"` opens a new terminal
-- [ ] Clipboard text never passed through shell `echo` (file redirect only for `SpawnTUI`)
-- [ ] `Spawn` returns clear errors without fallback
-- [ ] Unit tests: profile resolution, launch argv construction, escape, fallback paths
-- [ ] [docs/terminal.md](../../../../terminal.md) with verify steps
-- [ ] Windows verified on developer machine; macOS/Linux limitations noted in `docs/terminal.md`
+- [x] `TerminalConfig` on `Config` with defaults, validation, and `CLIPBOARD_TUI_TERMINAL` env override
+- [x] `internal/terminal` with `Spawner`, `Spawn`, `SpawnTUI`, `ErrNoTerminal`, `ErrUsedFallback`
+- [x] Auto-detect + explicit `terminal.emulator` for Windows (`wt`, `powershell`, `cmd`), macOS (`terminal`, `iterm`), Linux (≥4 emulators from table above)
+- [x] `SpawnTUI` uses temp-file stdin redirect compatible with existing `tui` stdin handling
+- [x] `fallback.go` on `SpawnTUI` failure; configurable `fallback_dir`
+- [x] `clipboard-tui debug spawn-terminal --command "echo hello"` opens a new terminal
+- [x] Clipboard text never passed through shell `echo` (file redirect only for `SpawnTUI`)
+- [x] `Spawn` returns clear errors without fallback
+- [x] Unit tests: profile resolution, launch argv construction, escape, fallback paths
+- [x] [docs/terminal.md](../../../../terminal.md) with verify steps
+- [x] Windows verified on developer machine; macOS/Linux limitations noted in `docs/terminal.md`
 
 ## Non-goals
 

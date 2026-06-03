@@ -3,6 +3,7 @@ package terminal
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/yourname/clipboard-tui/internal/config"
@@ -146,4 +147,68 @@ func containsArg(args []string, want string) bool {
 		}
 	}
 	return false
+}
+
+func TestResolveProfile_unknown_emulator(t *testing.T) {
+	lookPath := func(string) (string, error) {
+		return "/mock/bin", nil
+	}
+	_, _, err := ResolveProfile(config.TerminalConfig{Emulator: "nonexistent"}, lookPath)
+	if !errors.Is(err, ErrNoTerminal) {
+		t.Fatalf("ResolveProfile() error = %v, want ErrNoTerminal", err)
+	}
+}
+
+func TestSpawner_SpawnTUI_success(t *testing.T) {
+	state := mockLookPathPreferLastProfile(t)
+	var gotInner string
+
+	s := NewSpawner(config.TerminalConfig{Emulator: state.wantID})
+	s.lookPath = state.fn
+	s.startCmd = func(ctx context.Context, name string, args ...string) error {
+		if len(args) > 0 {
+			gotInner = args[len(args)-1]
+		}
+		return nil
+	}
+
+	err := s.SpawnTUI(context.Background(), "/usr/bin/clipboard-tui", "clipboard body")
+	if err != nil {
+		t.Fatalf("SpawnTUI() error = %v", err)
+	}
+	if gotInner == "" {
+		t.Fatal("expected inner command passed to launcher")
+	}
+	if !strings.Contains(gotInner, "tui") {
+		t.Errorf("inner = %q, want tui subcommand", gotInner)
+	}
+	if strings.Contains(gotInner, "clipboard body") {
+		t.Error("clipboard text must not appear in shell command")
+	}
+}
+
+func TestSpawner_Spawn_returns_error_without_fallback(t *testing.T) {
+	s := NewSpawner(config.TerminalConfig{Emulator: "nonexistent"})
+	s.lookPath = func(string) (string, error) { return "", errors.New("missing") }
+
+	_, err := s.Spawn(context.Background(), "echo hello")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if errors.Is(err, ErrUsedFallback) {
+		t.Fatal("Spawn must not return ErrUsedFallback")
+	}
+}
+
+func TestOpenFileCommand_windows(t *testing.T) {
+	if goos != "windows" {
+		t.Skip("windows only")
+	}
+	name, args, err := openFileCommand(`C:\out\clipboard-1.txt`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if name != "cmd" || len(args) < 2 || args[0] != "/c" {
+		t.Fatalf("openFileCommand() = %q %v", name, args)
+	}
 }

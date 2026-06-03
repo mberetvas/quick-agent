@@ -24,7 +24,9 @@ func BuildDebugInnerCommand(command string) string {
 func BuildTUIInnerCommand(executable, tempPath string) string {
 	switch goos {
 	case "windows":
-		return quoteWindowsCmdArg(executable) + " tui < " + quoteWindowsCmdArg(tempPath)
+		// Redirection is cmd.exe syntax; wrap so wt/powershell hosts run it correctly.
+		line := quoteWindowsCmdArg(executable) + " tui < " + quoteWindowsCmdArg(tempPath)
+		return "cmd /c " + quoteWindowsCmdCArg(line)
 	default:
 		return QuotePOSIXSingle(executable) + " tui < " + QuotePOSIXSingle(tempPath)
 	}
@@ -35,4 +37,9 @@ func quoteWindowsCmdArg(s string) string {
 		return `"` + strings.ReplaceAll(s, `"`, `\"`) + `"`
 	}
 	return s
+}
+
+// quoteWindowsCmdCArg quotes the entire command line passed to cmd /c.
+func quoteWindowsCmdCArg(s string) string {
+	return `"` + strings.ReplaceAll(s, `"`, `\"`) + `"`
 }
