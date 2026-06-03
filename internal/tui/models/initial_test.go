@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/bubbletea"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/yourname/clipboard-tui/internal/tui/styles"
 )
 
@@ -81,5 +81,33 @@ func TestInitialModel_View(t *testing.T) {
 
 	if !strings.Contains(viewStr, "Refactor/Improve") {
 		t.Error("Expected view to show options list")
+	}
+}
+
+func TestInitialModel_View_RuneSafeTruncate(t *testing.T) {
+	theme := styles.DefaultTheme()
+	// Create a string of 250 multi-byte runes: "世界" repeated 125 times
+	var builder strings.Builder
+	for i := 0; i < 125; i++ {
+		builder.WriteString("世界")
+	}
+	text := builder.String()
+	m := NewInitialModel(text, theme)
+
+	viewStr := m.View()
+
+	// The text should be truncated around 197 runes, ending with "世..."
+	if !strings.Contains(viewStr, "世...") {
+		t.Errorf("Expected view to contain safely-truncated multi-byte text ending with '世...', but got: %s", viewStr)
+	}
+
+	// Double check that multiple copies of the CJK character were preserved in the view
+	if !strings.Contains(viewStr, "世界") {
+		t.Errorf("Expected view to contain the repeated CJK characters '世界', but got: %s", viewStr)
+	}
+
+	// Confirm that no invalid/broken unicode replacement characters (U+FFFD) are present in the output
+	if strings.Contains(viewStr, "\uFFFD") {
+		t.Error("View contains replacement character \uFFFD (bad split UTF-8)")
 	}
 }

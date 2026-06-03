@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/bubbletea"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/yourname/clipboard-tui/internal/tui/styles"
@@ -78,8 +78,11 @@ func (m InitialModel) View() string {
 	dispText := m.clipboardText
 	if len(dispText) == 0 {
 		dispText = "(Clipboard is empty)"
-	} else if len(dispText) > 200 {
-		dispText = dispText[:197] + "..."
+	} else {
+		runes := []rune(dispText)
+		if len(runes) > 200 {
+			dispText = string(runes[:197]) + "..."
+		}
 	}
 
 	contentView := contentStyle.Render("Clipboard text:\n" + m.theme.NormalText.Render(dispText))

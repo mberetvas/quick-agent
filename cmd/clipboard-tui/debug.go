@@ -128,7 +128,7 @@ var testLLMCmd = &cobra.Command{
 		fmt.Println("Streaming response:")
 
 		// 3. Generate stream
-		tokens, err := client.Generate(ctx, renderedPrompt)
+		tokens, errs, err := client.Generate(ctx, renderedPrompt)
 		if err != nil {
 			return fmt.Errorf("generation failed: %w", err)
 		}
@@ -145,6 +145,11 @@ var testLLMCmd = &cobra.Command{
 				fmt.Print(token)
 				// Flush stdout immediately for responsive token streams
 				os.Stdout.Sync()
+			case err, ok := <-errs:
+				if ok && err != nil {
+					fmt.Printf("\nStream Error: %v\n", err)
+					return err
+				}
 			}
 		}
 	},

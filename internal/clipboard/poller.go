@@ -2,6 +2,7 @@ package clipboard
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/yourname/clipboard-tui/internal/config"
@@ -9,12 +10,14 @@ import (
 
 // Poller polls the clipboard periodically and emits sanitized changes on a channel.
 type Poller struct {
+	mu          sync.Mutex
 	cb          Clipboard
 	cfg         *config.Config
 	changes     chan string
 	errors      chan error
 	lastVal     string
 	isRunning   bool
+	used        bool
 	fastPoll    time.Duration
 	slowPoll    time.Duration
 	currentPoll time.Duration
@@ -53,28 +56,38 @@ func (p *Poller) Errors() <-chan error {
 
 // Start spawns a background polling goroutine.
 func (p *Poller) Start(ctx context.Context) {
-	if p.isRunning {
+	p.mu.Lock()
+	if p.isRunning || p.used {
+		p.mu.Unlock()
 		return
 	}
 	p.isRunning = true
+	p.used = true
 
 	// Read initial value so we only emit actual new changes
 	if initial, err := p.cb.Get(); err == nil {
-		p.lastVal = Sanitize(initial, p.cfg.Clipboard.MaxSize)
+		p.lastVal = Sanitize(initial, p.cfg.Clipboard.TruncateSize)
 	}
+	p.mu.Unlock()
 
 	go func() {
 		defer func() {
+			p.mu.Lock()
 			p.isRunning = false
+			p.mu.Unlock()
 			close(p.changes)
 			close(p.errors)
 		}()
 
 		for {
+			p.mu.Lock()
+			interval := p.currentPoll
+			p.mu.Unlock()
+
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(p.currentPoll):
+			case <-time.After(interval):
 				raw, err := p.cb.Get()
 				if err != nil {
 					select {
@@ -82,38 +95,56 @@ func (p *Poller) Start(ctx context.Context) {
 					default:
 					}
 					// On error, let's keep polling at normal interval
+					p.mu.Lock()
 					p.currentPoll = p.slowPoll
+					p.mu.Unlock()
 					continue
 				}
 
-				sanitized := Sanitize(raw, p.cfg.Clipboard.MaxSize)
+				sanitized := Sanitize(raw, p.cfg.Clipboard.TruncateSize)
 
 				// Skip empty / whitespace-only (it is already sanitized to "")
 				if sanitized == "" {
+					p.mu.Lock()
 					p.currentPoll = p.slowPoll
+					p.mu.Unlock()
 					continue
 				}
 
-				if sanitized != p.lastVal {
+				p.mu.Lock()
+				last := p.lastVal
+				p.mu.Unlock()
+
+				if sanitized != last {
+					p.mu.Lock()
 					p.lastVal = sanitized
+					p.currentPoll = p.fastPoll
+					p.mu.Unlock()
+
 					// Emit the change
 					select {
 					case p.changes <- sanitized:
 					default:
 					}
-
-					// Speed up polling to capture fast updates
-					p.currentPoll = p.fastPoll
 				} else {
 					// No change - adaptively back off slowly
+					p.mu.Lock()
 					if p.currentPoll < p.slowPoll {
 						p.currentPoll += 100 * time.Millisecond
 						if p.currentPoll > p.slowPoll {
 							p.currentPoll = p.slowPoll
 						}
 					}
+					p.mu.Unlock()
 				}
 			}
 		}
 	}()
+}
+
+// CurrentPoll returns the current adaptive polling interval in a thread-safe manner.
+func (p *Poller) CurrentPoll() time.Duration {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.currentPoll
 }

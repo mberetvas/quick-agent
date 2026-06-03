@@ -7,8 +7,8 @@ import (
 
 // LLMClient defines the unified interface for interacting with LLM backends.
 type LLMClient interface {
-	// Generate takes the formatted prompt and returns a read-only channel of streamed tokens.
-	Generate(ctx context.Context, prompt string) (<-chan string, error)
+	// Generate takes the formatted prompt and returns a read-only channel of streamed tokens and an errors channel.
+	Generate(ctx context.Context, prompt string) (<-chan string, <-chan error, error)
 
 	// HealthCheck returns nil if the backend is reachable and functioning, else an error.
 	HealthCheck(ctx context.Context) error

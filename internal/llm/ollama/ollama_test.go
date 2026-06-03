@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/yourname/clipboard-tui/internal/config"
 )
@@ -74,7 +75,7 @@ func TestOllamaGenerateStream(t *testing.T) {
 	}
 
 	client := NewClient(cfg)
-	tokens, err := client.Generate(context.Background(), "Greet me")
+	tokens, errs, err := client.Generate(context.Background(), "Greet me")
 	if err != nil {
 		t.Fatalf("Generate failed: %v", err)
 	}
@@ -84,6 +85,13 @@ func TestOllamaGenerateStream(t *testing.T) {
 		results = append(results, token)
 	}
 
+	// Read errors channel
+	for err := range errs {
+		if err != nil {
+			t.Errorf("unexpected error on errs channel: %v", err)
+		}
+	}
+
 	if len(results) != 2 {
 		t.Errorf("expected 2 tokens, got %v", results)
 	}
@@ -91,5 +99,54 @@ func TestOllamaGenerateStream(t *testing.T) {
 	fullResponse := results[0] + results[1]
 	if fullResponse != "Hello world!" {
 		t.Errorf("expected 'Hello world!' response, got: %s", fullResponse)
+	}
+}
+
+func TestOllamaGenerateStream_ScannerError(t *testing.T) {
+	// Setup mock server that sends a very long line to exceed scanner's capacity (64KB)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		// Create a line of 70,000 character length, which exceeds max token size
+		longLine := make([]byte, 70000)
+		for i := range longLine {
+			longLine[i] = 'A'
+		}
+		w.Write(longLine)
+		w.Write([]byte("\n"))
+	}))
+	defer server.Close()
+
+	cfg := config.OllamaConfig{
+		URL:   server.URL,
+		Model: "llama3:8b",
+	}
+
+	client := NewClient(cfg)
+	tokens, errs, err := client.Generate(context.Background(), "Greet me")
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	// Drain tokens
+	for range tokens {
+	}
+
+	// We should receive a non-nil error from errs channel (ideally bufio.ErrTooLong)
+	select {
+	case err, ok := <-errs:
+		if !ok {
+			t.Fatal("expected an error, but errs channel closed empty")
+		}
+		if err == nil {
+			t.Fatal("expected non-nil error, got nil")
+		}
+		// Confirm the error is indeed a "too long" or similar buffer capacity error
+		if err.Error() != "bufio.Scanner: token too long" {
+			t.Errorf("expected bufio token too long error, got: %v", err)
+		}
+	case <-time.After(1 * time.Second):
+		t.Fatal("timed out waiting for error reporting")
 	}
 }

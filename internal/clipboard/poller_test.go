@@ -143,8 +143,8 @@ func TestPollerAdaptiveBackoff(t *testing.T) {
 	poller.Start(ctx)
 
 	// Since initial matches "initial", currentPoll starts slow at 500ms
-	if poller.currentPoll != 500*time.Millisecond {
-		t.Errorf("expected initial currentPoll to be 500ms, got %v", poller.currentPoll)
+	if poller.CurrentPoll() != 500*time.Millisecond {
+		t.Errorf("expected initial currentPoll to be 500ms, got %v", poller.CurrentPoll())
 	}
 
 	// Trigger a change
@@ -161,16 +161,16 @@ func TestPollerAdaptiveBackoff(t *testing.T) {
 	}
 
 	// At this point, a change was detected, currentPoll should drop to fastPoll (100ms)
-	if poller.currentPoll != 100*time.Millisecond {
-		t.Errorf("expected currentPoll to be 100ms (fast poll) after change, got %v", poller.currentPoll)
+	if poller.CurrentPoll() != 100*time.Millisecond {
+		t.Errorf("expected currentPoll to be 100ms (fast poll) after change, got %v", poller.CurrentPoll())
 	}
 
 	// Let's do another cycle with no change. Poller should adaptively back off (add 100ms)
 	// We wait 150ms (enough to trigger one tick of 100ms)
 	time.Sleep(150 * time.Millisecond)
 
-	if poller.currentPoll < 150*time.Millisecond {
-		t.Errorf("expected currentPoll to adaptively back off (be > 100ms), got %v", poller.currentPoll)
+	if poller.CurrentPoll() < 150*time.Millisecond {
+		t.Errorf("expected currentPoll to adaptively back off (be > 100ms), got %v", poller.CurrentPoll())
 	}
 }
 
@@ -195,5 +195,34 @@ func TestPollerEmitsErrors(t *testing.T) {
 		}
 	case <-time.After(1 * time.Second):
 		t.Fatal("timed out waiting for poller error report")
+	}
+}
+
+func TestPollerUsesTruncateSize(t *testing.T) {
+	cfg := config.Default()
+	cfg.Clipboard.MaxSize = 20
+	cfg.Clipboard.TruncateSize = 10
+	cfg.Clipboard.PollIntervalMS = 100
+
+	mock := &MockClipboard{text: "initial"}
+	poller := NewPoller(mock, cfg)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	poller.Start(ctx)
+
+	// Set value larger than TruncateSize but within MaxSize
+	val := "abcdefghijklm" // 13 chars
+	mock.Set(val)
+
+	select {
+	case change := <-poller.Changes():
+		expected := "abcdefghij" + TruncateMarker
+		if change != expected {
+			t.Errorf("expected truncated change %q, got %q", expected, change)
+		}
+	case <-time.After(1 * time.Second):
+		t.Fatal("timed out waiting for clipboard change notification")
 	}
 }

@@ -73,7 +73,7 @@ func (oc *OllamaClient) HealthCheck(ctx context.Context) error {
 }
 
 // Generate streams model response tokens back step-by-step.
-func (oc *OllamaClient) Generate(ctx context.Context, prompt string) (<-chan string, error) {
+func (oc *OllamaClient) Generate(ctx context.Context, prompt string) (<-chan string, <-chan error, error) {
 	url := fmt.Sprintf("%s/api/generate", oc.cfg.URL)
 
 	payload := Request{
@@ -88,12 +88,12 @@ func (oc *OllamaClient) Generate(ctx context.Context, prompt string) (<-chan str
 
 	jsonBytes, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request payload: %w", err)
+		return nil, nil, fmt.Errorf("failed to marshal request payload: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonBytes))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
@@ -103,23 +103,31 @@ func (oc *OllamaClient) Generate(ctx context.Context, prompt string) (<-chan str
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("Ollama generate request failed: %w", err)
+		return nil, nil, fmt.Errorf("Ollama generate request failed: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		resp.Body.Close()
-		return nil, fmt.Errorf("Ollama returned raw error status: %s", resp.Status)
+		return nil, nil, fmt.Errorf("Ollama returned raw error status: %s", resp.Status)
 	}
 
 	tokens := make(chan string, 100)
+	errs := make(chan error, 1)
 
 	go func() {
+		scanner := bufio.NewScanner(resp.Body)
 		defer func() {
 			resp.Body.Close()
+			if err := scanner.Err(); err != nil {
+				select {
+				case errs <- err:
+				default:
+				}
+			}
 			close(tokens)
+			close(errs)
 		}()
 
-		scanner := bufio.NewScanner(resp.Body)
 		for scanner.Scan() {
 			select {
 			case <-ctx.Done():
@@ -152,5 +160,5 @@ func (oc *OllamaClient) Generate(ctx context.Context, prompt string) (<-chan str
 		}
 	}()
 
-	return tokens, nil
+	return tokens, errs, nil
 }
