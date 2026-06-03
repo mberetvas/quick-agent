@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/yourname/clipboard-tui/internal/clipboard"
 	"github.com/yourname/clipboard-tui/internal/config"
+	"github.com/yourname/clipboard-tui/internal/hotkey"
 	"github.com/yourname/clipboard-tui/internal/llm"
 	"github.com/yourname/clipboard-tui/internal/llm/ollama"
 )
@@ -155,9 +156,59 @@ var testLLMCmd = &cobra.Command{
 	},
 }
 
+var debugHotkeyCmd = &cobra.Command{
+	Use:   "hotkey",
+	Short: "Listen for hotkey press and print confirmation",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := config.LoadWithEnv(configPath)
+		if err != nil {
+			return fmt.Errorf("failed to load configuration: %w", err)
+		}
+
+		fmt.Printf("Listening for hotkey: %s+%s (Debounce: %dms)...\n",
+			strings.Join(cfg.Hotkey.Modifiers, "+"),
+			cfg.Hotkey.Key,
+			cfg.Hotkey.DebounceMS)
+		fmt.Println("Press Ctrl+C to stop.")
+
+		listener := hotkey.NewListener(cfg.Hotkey)
+		events := make(chan struct{}, 1)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		// Wire OS signal listener for clean exit
+		sigs := make(chan os.Signal, 1)
+		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+		go func() {
+			<-sigs
+			fmt.Println("\nStopping hotkey listener gracefully...")
+			cancel()
+		}()
+
+		// Start the hotkey listener
+		go func() {
+			if err := listener.Start(ctx, events); err != nil {
+				fmt.Fprintf(os.Stderr, "Hotkey listener error: %v\n", err)
+			}
+		}()
+
+		// Wait for events
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-events:
+				fmt.Println("Hotkey pressed!")
+			}
+		}
+	},
+}
+
 func init() {
 	testLLMCmd.Flags().StringVar(&debugLLMTemplate, "template", "refine", "Select prompt template: refine, translate, summarize, explain, custom")
 	debugCmd.AddCommand(watchClipboardCmd)
 	debugCmd.AddCommand(testLLMCmd)
+	debugCmd.AddCommand(debugHotkeyCmd)
 	rootCmd.AddCommand(debugCmd)
 }
