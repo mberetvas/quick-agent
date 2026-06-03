@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "golang-pro": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "skillPath": "skills/golang-pro/SKILL.md",
+      "computedHash": "dc87ea17b2dff33b3833cf42d167876d2bd68170831e7c5062b739868b99ee2c"
+    },
     "golang-project-layout": {
       "source": "samber/cc-skills-golang",
       "sourceType": "github",
