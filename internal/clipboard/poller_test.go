@@ -104,6 +104,37 @@ func TestSanitize(t *testing.T) {
 	}
 }
 
+func TestPollerLatestText(t *testing.T) {
+	mock := &MockClipboard{text: "initial"}
+	cfg := config.Default()
+	cfg.Clipboard.TruncateSize = 100
+	cfg.Clipboard.PollIntervalMS = 50
+
+	poller := NewPoller(mock, cfg)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	poller.Start(ctx)
+
+	deadline := time.After(2 * time.Second)
+	for poller.LatestText() != "initial" {
+		select {
+		case <-deadline:
+			t.Fatalf("LatestText() = %q, want initial", poller.LatestText())
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+
+	mock.text = "updated"
+	for poller.LatestText() != "updated" {
+		select {
+		case <-deadline:
+			t.Fatalf("LatestText() = %q, want updated", poller.LatestText())
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+}
+
 func TestPollerDetectsChanges(t *testing.T) {
 	cfg := config.Default()
 	cfg.Clipboard.PollIntervalMS = 200

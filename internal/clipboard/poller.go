@@ -142,6 +142,13 @@ func (p *Poller) Start(ctx context.Context) {
 	}()
 }
 
+// LatestText returns the most recently seen sanitized clipboard value.
+func (p *Poller) LatestText() string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.lastVal
+}
+
 // CurrentPoll returns the current adaptive polling interval in a thread-safe manner.
 func (p *Poller) CurrentPoll() time.Duration {
 	p.mu.Lock()

@@ -41,18 +41,18 @@ See [02-terminal-spawner.md](./02-terminal-spawner.md) and [docs/terminal.md](..
 
 ## Acceptance criteria
 
-- [ ] `cmd/clipboard-tui/daemon.go` contains the `daemonCmd` Cobra command
-- [ ] `internal/daemon/main.go` implements the daemon main loop with `Run(ctx, cfg *config.Config) error`
-- [ ] PID file written to `config.Daemon.PIDFile` path
-- [ ] Checks for existing instance via PID file on startup
-- [ ] Starts clipboard poller from Phase 1 slice 05
-- [ ] Starts hotkey listener from slice 01
-- [ ] On hotkey press: gets latest text from poller, calls `terminal.NewSpawner(cfg.Terminal).SpawnTUI(ctx, os.Executable(), text)`
-- [ ] Handles `terminal.ErrUsedFallback` as info-level log, other spawn errors as errors
-- [ ] `clipboard-tui daemon` starts the daemon process
-- [ ] `clipboard-tui daemon --stop` sends signal to stop running daemon
-- [ ] Clean shutdown on SIGTERM/SIGINT (Ctrl+C)
-- [ ] Logging writes to configured log file
+- [x] `cmd/clipboard-tui/daemon.go` contains the `daemonCmd` Cobra command
+- [x] `internal/daemon/main.go` implements the daemon main loop with `Run(ctx, cfg *config.Config) error`
+- [x] PID file written to `config.Daemon.PIDFile` path
+- [x] Checks for existing instance via PID file on startup
+- [x] Starts clipboard poller from Phase 1 slice 05
+- [x] Starts hotkey listener from slice 01
+- [x] On hotkey press: gets latest text from poller, calls `terminal.NewSpawner(cfg.Terminal).SpawnTUI(ctx, os.Executable(), text)`
+- [x] Handles `terminal.ErrUsedFallback` as info-level log, other spawn errors as errors
+- [x] `clipboard-tui daemon` starts the daemon process
+- [x] `clipboard-tui daemon --stop` sends signal to stop running daemon
+- [x] Clean shutdown on SIGTERM/SIGINT (Ctrl+C)
+- [x] Logging writes to configured log file
 
 ## Blocked by
 
