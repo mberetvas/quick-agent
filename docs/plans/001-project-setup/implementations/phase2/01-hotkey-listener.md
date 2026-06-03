@@ -14,13 +14,13 @@ The listener should support platform-specific modifier keys (Ctrl/Alt on Windows
 
 ## Acceptance criteria
 
-- [ ] `internal/hotkey/listener.go` implements listener with `Start(ctx, chan<- struct{})` method
-- [ ] Hotkey configuration read from `config.Hotkey` (modifiers + key + debounce)
-- [ ] Debounce prevents duplicate events within the configured interval
-- [ ] Works on developer's primary platform; documents limitations for others
-- [ ] `clipboard-tui debug hotkey` prints "Hotkey pressed!" to stdout when triggered
-- [ ] Clean shutdown on context cancellation (Ctrl+C)
-- [ ] Unit tests cover hotkey combination detection with mock robotgo
+- [x] `internal/hotkey/listener.go` implements listener with `Start(ctx, chan<- struct{})` method
+- [x] Hotkey configuration read from `config.Hotkey` (modifiers + key + debounce)
+- [x] Debounce prevents duplicate events within the configured interval
+- [x] Works on developer's primary platform; documents limitations for others
+- [x] `clipboard-tui debug hotkey` prints "Hotkey pressed!" to stdout when triggered
+- [x] Clean shutdown on context cancellation (Ctrl+C)
+- [x] Unit tests cover hotkey combination detection with mock detector
 
 ## Blocked by
 

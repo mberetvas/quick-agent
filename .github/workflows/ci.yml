@@ -29,3 +29,24 @@ jobs:
 
       - name: Build
         run: go build ./...
+
+  build-cgo:
+    name: Build with CGO (Linux)
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: 1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+
+      - name: Install CGO dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc libx11-dev libxtst-dev
+
+      - name: Build CLI with gohook
+        run: go build -o /dev/null ./cmd/clipboard-tui

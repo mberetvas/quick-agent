@@ -16,6 +16,7 @@ type MockDetector struct {
 	mu             sync.Mutex
 	registeredKeys [][]string
 	onPress        func()
+	ready          chan struct{}
 }
 
 // AddEvents mock - always returns true
@@ -29,6 +30,9 @@ func (m *MockDetector) AddEvents(keys ...string) bool {
 // StartEventLoop mock - stores the callback and blocks until context is cancelled
 func (m *MockDetector) StartEventLoop(ctx context.Context, onPress func()) {
 	m.onPress = onPress
+	if m.ready != nil {
+		close(m.ready)
+	}
 	<-ctx.Done()
 }
 
@@ -39,81 +43,23 @@ func (m *MockDetector) TriggerPress() {
 	}
 }
 
-func TestListener_Debounce(t *testing.T) {
+func waitForMockReady(t *testing.T, mock *MockDetector) {
+	t.Helper()
+	select {
+	case <-mock.ready:
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("mock detector did not become ready")
+	}
+}
+
+func TestListener_RegistersExpectedCombo(t *testing.T) {
 	cfg := config.HotkeyConfig{
 		Modifiers:  []string{"ctrl", "alt"},
 		Key:        "v",
 		DebounceMS: 100,
 	}
 
-	// Use mock detector
-	mockDetector := &MockDetector{}
-	SetDetector(mockDetector)
-	defer SetDetector(nil) // Reset after test
-
-	listener := NewListener(cfg)
-	events := make(chan struct{}, 10)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		_ = listener.Start(ctx, events)
-	}()
-
-	// Wait a bit for Start to set up the detector
-	time.Sleep(10 * time.Millisecond)
-
-	// First trigger - should send event
-	mockDetector.TriggerPress()
-
-	select {
-	case <-events:
-		// Success - first event received
-	case <-time.After(100 * time.Millisecond):
-		t.Fatal("Expected first event to be sent")
-	}
-
-	// Second trigger immediately - should be debounced
-	mockDetector.TriggerPress()
-
-	// Check no second event
-	select {
-	case <-events:
-		t.Fatal("Second event should have been debounced")
-	case <-time.After(50 * time.Millisecond):
-		// Good - no event
-	}
-
-	// Wait for debounce period to pass
-	time.Sleep(110 * time.Millisecond)
-
-	// Third trigger after debounce - should send event
-	mockDetector.TriggerPress()
-
-	select {
-	case <-events:
-		// Success - third event received
-	case <-time.After(100 * time.Millisecond):
-		t.Fatal("Expected third event to be sent after debounce")
-	}
-
-	// Clean up
-	cancel()
-	wg.Wait()
-}
-
-func TestListener_Start_SendsEventOnChannel(t *testing.T) {
-	cfg := config.HotkeyConfig{
-		Modifiers:  []string{"ctrl"},
-		Key:        "c",
-		DebounceMS: 10,
-	}
-
-	mockDetector := &MockDetector{}
+	mockDetector := &MockDetector{ready: make(chan struct{})}
 	SetDetector(mockDetector)
 	defer SetDetector(nil)
 
@@ -130,16 +76,115 @@ func TestListener_Start_SendsEventOnChannel(t *testing.T) {
 		_ = listener.Start(ctx, events)
 	}()
 
-	// Wait a bit for setup
-	time.Sleep(10 * time.Millisecond)
+	waitForMockReady(t, mockDetector)
 
-	// Trigger an event
+	mockDetector.mu.Lock()
+	if len(mockDetector.registeredKeys) != 1 {
+		t.Fatalf("expected 1 registration, got %d", len(mockDetector.registeredKeys))
+	}
+	got := mockDetector.registeredKeys[0]
+	mockDetector.mu.Unlock()
+
+	want := []string{"ctrl", "alt", "v"}
+	if len(got) != len(want) {
+		t.Fatalf("registered keys = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("registered keys = %v, want %v", got, want)
+		}
+	}
+
+	cancel()
+	wg.Wait()
+}
+
+func TestListener_Debounce(t *testing.T) {
+	cfg := config.HotkeyConfig{
+		Modifiers:  []string{"ctrl", "alt"},
+		Key:        "v",
+		DebounceMS: 100,
+	}
+
+	mockDetector := &MockDetector{ready: make(chan struct{})}
+	SetDetector(mockDetector)
+	defer SetDetector(nil)
+
+	listener := NewListener(cfg)
+	events := make(chan struct{}, 10)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		_ = listener.Start(ctx, events)
+	}()
+
+	waitForMockReady(t, mockDetector)
+
 	mockDetector.TriggerPress()
 
-	// Wait for event
 	select {
 	case <-events:
-		// Success
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("Expected first event to be sent")
+	}
+
+	mockDetector.TriggerPress()
+
+	select {
+	case <-events:
+		t.Fatal("Second event should have been debounced")
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	time.Sleep(110 * time.Millisecond)
+
+	mockDetector.TriggerPress()
+
+	select {
+	case <-events:
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("Expected third event to be sent after debounce")
+	}
+
+	cancel()
+	wg.Wait()
+}
+
+func TestListener_Start_SendsEventOnChannel(t *testing.T) {
+	cfg := config.HotkeyConfig{
+		Modifiers:  []string{"ctrl"},
+		Key:        "c",
+		DebounceMS: 10,
+	}
+
+	mockDetector := &MockDetector{ready: make(chan struct{})}
+	SetDetector(mockDetector)
+	defer SetDetector(nil)
+
+	listener := NewListener(cfg)
+	events := make(chan struct{}, 1)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		_ = listener.Start(ctx, events)
+	}()
+
+	waitForMockReady(t, mockDetector)
+
+	mockDetector.TriggerPress()
+
+	select {
+	case <-events:
 	case <-time.After(100 * time.Millisecond):
 		t.Fatal("Expected event on channel")
 	}
@@ -155,7 +200,7 @@ func TestListener_CleanShutdown(t *testing.T) {
 		DebounceMS: 50,
 	}
 
-	mockDetector := &MockDetector{}
+	mockDetector := &MockDetector{ready: make(chan struct{})}
 	SetDetector(mockDetector)
 	defer SetDetector(nil)
 
@@ -171,13 +216,10 @@ func TestListener_CleanShutdown(t *testing.T) {
 		_ = listener.Start(ctx, events)
 	}()
 
-	// Let it run for a bit
-	time.Sleep(10 * time.Millisecond)
+	waitForMockReady(t, mockDetector)
 
-	// Cancel context
 	cancel()
 
-	// Wait for Start to return
 	done := make(chan struct{})
 	go func() {
 		wg.Wait()
@@ -186,7 +228,6 @@ func TestListener_CleanShutdown(t *testing.T) {
 
 	select {
 	case <-done:
-		// Success - clean shutdown
 	case <-time.After(100 * time.Millisecond):
 		t.Fatal("Expected clean shutdown")
 	}
@@ -194,18 +235,17 @@ func TestListener_CleanShutdown(t *testing.T) {
 
 func TestListener_ChannelFull_DropsEvent(t *testing.T) {
 	cfg := config.HotkeyConfig{
-		Modifiers:  []string{},
+		Modifiers:  []string{"ctrl"},
 		Key:        "a",
-		DebounceMS: 0, // No debounce
+		DebounceMS: 0,
 	}
 
-	mockDetector := &MockDetector{}
+	mockDetector := &MockDetector{ready: make(chan struct{})}
 	SetDetector(mockDetector)
 	defer SetDetector(nil)
 
 	listener := NewListener(cfg)
 
-	// Use buffered channel of size 1
 	events := make(chan struct{}, 1)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -218,29 +258,23 @@ func TestListener_ChannelFull_DropsEvent(t *testing.T) {
 		_ = listener.Start(ctx, events)
 	}()
 
-	// Wait a bit for setup
-	time.Sleep(10 * time.Millisecond)
+	waitForMockReady(t, mockDetector)
 
-	// First trigger - fills the buffer
 	mockDetector.TriggerPress()
 	time.Sleep(10 * time.Millisecond)
 
-	// Second trigger - buffer is full, should be dropped
 	mockDetector.TriggerPress()
 
-	// Drain the first event
 	select {
 	case <-events:
 	case <-time.After(50 * time.Millisecond):
 		t.Fatal("Expected to drain first event")
 	}
 
-	// No second event should be available
 	select {
 	case <-events:
 		t.Fatal("Second event should have been dropped")
 	case <-time.After(50 * time.Millisecond):
-		// Success - no second event
 	}
 
 	cancel()
@@ -266,9 +300,9 @@ func TestNewListener(t *testing.T) {
 
 func TestListener_PlatformConfigs(t *testing.T) {
 	tests := []struct {
-		name     string
+		name      string
 		modifiers []string
-		key      string
+		key       string
 	}{
 		{"Windows Ctrl+Alt+V", []string{"ctrl", "alt"}, "v"},
 		{"macOS Cmd+Option+V", []string{"cmd", "option"}, "v"},
@@ -303,7 +337,6 @@ func TestListener_WithoutDetector_Fails(t *testing.T) {
 		DebounceMS: 100,
 	}
 
-	// Ensure no detector is set
 	SetDetector(nil)
 
 	listener := NewListener(cfg)
@@ -312,12 +345,11 @@ func TestListener_WithoutDetector_Fails(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Start should fail without a detector
 	err := listener.Start(ctx, events)
 	if err == nil {
 		t.Fatal("Expected error when no detector is set")
 	}
-	if err.Error() != "no key detector available. Build with CGO_ENABLED=1 for robotgo support" {
+	if err.Error() != "no key detector available. Build with CGO_ENABLED=1 for gohook (CGO) support" {
 		t.Errorf("Unexpected error message: %v", err)
 	}
 }

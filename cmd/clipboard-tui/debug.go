@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/spf13/cobra"
@@ -180,26 +181,32 @@ var debugHotkeyCmd = &cobra.Command{
 		// Wire OS signal listener for clean exit
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+		defer signal.Stop(sigs)
 		go func() {
 			<-sigs
 			fmt.Println("\nStopping hotkey listener gracefully...")
 			cancel()
 		}()
 
-		// Start the hotkey listener
+		errCh := make(chan error, 1)
+		var wg sync.WaitGroup
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			if err := listener.Start(ctx, events); err != nil {
-				fmt.Fprintf(os.Stderr, "Hotkey listener error: %v\n", err)
+				errCh <- err
 			}
 		}()
 
-		// Wait for events
 		for {
 			select {
-			case <-ctx.Done():
-				return nil
+			case err := <-errCh:
+				return err
 			case <-events:
 				fmt.Println("Hotkey pressed!")
+			case <-ctx.Done():
+				wg.Wait()
+				return nil
 			}
 		}
 	},

@@ -98,6 +98,8 @@ func ReadAll() (string, error) {
 
 Robotgo provides cross-platform hotkey detection using cgo. It wraps native APIs for each platform.
 
+**Implementation note:** The shipped hotkey listener uses `github.com/robotn/gohook` directly (`hook.Register` + `hook.Start` + `hook.Process` + `hook.End`); see [`docs/hotkey.md`](../../hotkey.md).
+
 ### Implementation
 
 ```go

@@ -1,5 +1,5 @@
 // Package hotkey provides cross-platform hotkey listening functionality.
-// It uses robotgo for detecting key presses and emits events on a channel.
+// It uses github.com/robotn/gohook (CGO) for detecting key presses and emits events on a channel.
 //
 // REQUIREMENTS FOR PRODUCTION USE:
 //   - CGO_ENABLED=1 must be set
@@ -12,7 +12,7 @@
 //
 // For testing without CGO, the tests use the mock detector and Trigger method.
 //
-// See: https://github.com/go-vgo/robotgo#requirements
+// See: docs/hotkey.md
 package hotkey
 
 import (
@@ -36,8 +36,8 @@ type KeyDetector interface {
 	StartEventLoop(ctx context.Context, onPress func())
 }
 
-// defaultDetector uses robotgo for actual hotkey detection (when CGO is enabled).
-// Set via init() in robotgo_detector.go when CGO_ENABLED=1.
+// defaultDetector uses gohook for actual hotkey detection (when CGO is enabled).
+// Set via init() in gohook_detector.go when CGO_ENABLED=1.
 var defaultDetector KeyDetector
 
 // SetDetector sets a custom key detector. Useful for testing.
@@ -72,7 +72,7 @@ func NewListener(cfg config.HotkeyConfig) *Listener {
 //
 // The hotkey combination uses the detector's AddEvents which expects modifier keys
 // followed by the main key as separate string arguments.
-// Supported modifiers: "ctrl", "alt", "shift", "cmd" (macOS), "win" (Windows)
+// Supported modifiers: "ctrl", "alt", "shift", "cmd" (macOS), "option" (alias for alt), "win" (Windows)
 // Supported keys: letters (a-z), numbers (0-9), F1-F12, "up", "down", "left", "right",
 // "space", "enter", "tab", "esc", "backspace", "delete", "home", "end", "pageup", "pagedown"
 func (l *Listener) Start(ctx context.Context, events chan<- struct{}) error {
@@ -85,9 +85,8 @@ func (l *Listener) Start(ctx context.Context, events chan<- struct{}) error {
 	args = append(args, l.cfg.Modifiers...)
 	args = append(args, l.cfg.Key)
 
-	// Register the hotkey combination
 	if l.detector == nil {
-		return fmt.Errorf("no key detector available. Build with CGO_ENABLED=1 for robotgo support")
+		return fmt.Errorf("no key detector available. Build with CGO_ENABLED=1 for gohook (CGO) support")
 	}
 
 	if !l.detector.AddEvents(args...) {
@@ -95,18 +94,16 @@ func (l *Listener) Start(ctx context.Context, events chan<- struct{}) error {
 		return fmt.Errorf("failed to register hotkey: %s", strings.Join(args, "+"))
 	}
 
-	fmt.Printf("Hotkey listener registered: %s+%s (debounce: %dms)\n",
-		strings.Join(l.cfg.Modifiers, "+"), l.cfg.Key, l.cfg.DebounceMS)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		l.detector.StartEventLoop(ctx, l.handlePress)
+	}()
 
-	// Start the detector's event loop in a goroutine
-	// It will call onPress when the hotkey is detected
-	go l.detector.StartEventLoop(ctx, l.handlePress)
-
-	// Block until context is cancelled
 	<-ctx.Done()
-
 	l.active = false
-	fmt.Println("Hotkey listener stopped")
+	wg.Wait()
 	return nil
 }
 
