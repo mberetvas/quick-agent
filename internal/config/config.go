@@ -41,15 +41,15 @@ type OpenRouterConfig struct {
 
 // HotkeyConfig defines the global hotkey configuration
 type HotkeyConfig struct {
-	Modifiers []string `json:"modifiers"` // e.g., ["ctrl", "alt"]
-	Key       string   `json:"key"`
+	Modifiers  []string `json:"modifiers"` // e.g., ["ctrl", "alt"]
+	Key        string   `json:"key"`
 	DebounceMS int      `json:"debounce_ms"`
 }
 
 // ClipboardConfig dictates clipboard-specific limits and behaviors
 type ClipboardConfig struct {
-	MaxSize        int `json:"max_size"`        // chars
-	TruncateSize   int `json:"truncate_size"`   // chars
+	MaxSize        int `json:"max_size"`         // chars
+	TruncateSize   int `json:"truncate_size"`    // chars
 	PollIntervalMS int `json:"poll_interval_ms"` // ms
 }
 
