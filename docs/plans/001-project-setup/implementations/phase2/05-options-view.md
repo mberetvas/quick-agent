@@ -14,16 +14,16 @@ Actions don't need to execute yet — they can be stubbed — but the view must 
 
 ## Acceptance criteria
 
-- [ ] `internal/tui/models/options.go` implements the OptionsModel
-- [ ] Displays list of actions: Refine, Translate, Summarize, Explain, Custom Prompt
-- [ ] Actions are navigable with keys from `config.TUI.Keybindings` (default: j/k/arrow, enter)
-- [ ] Selected action is highlighted, others are not
-- [ ] `enter` on an action pushes the corresponding view onto the stack (stubbed for now)
-- [ ] `esc`/`q` pops back to the previous view (initial view)
-- [ ] `clipboard-tui tui --text "hello"` shows text in initial view with options accessible
-- [ ] View uses theme from `internal/tui/styles/theme.go`
-- [ ] View is properly integrated into root model's view stack
-- [ ] Unit tests cover navigation, selection, and view stack behavior
+- [x] `internal/tui/models/options.go` implements the OptionsModel
+- [x] Displays list of actions: Refine, Translate, Summarize, Explain, Custom Prompt
+- [x] Actions are navigable with keys from `config.TUI.Keybindings` (default: j/k/arrow, enter)
+- [x] Selected action is highlighted, others are not
+- [x] `enter` on an action pushes the corresponding view onto the stack (stubbed for now)
+- [x] `esc`/`q` pops back to the previous view (initial view)
+- [x] `clipboard-tui tui --text "hello"` shows text in initial view with options accessible
+- [x] View uses theme from `internal/tui/styles/theme.go`
+- [x] View is properly integrated into root model's view stack
+- [x] Unit tests cover navigation, selection, and view stack behavior
 
 ## Blocked by
 

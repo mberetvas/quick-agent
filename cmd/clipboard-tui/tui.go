@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+	"github.com/yourname/clipboard-tui/internal/config"
 	"github.com/yourname/clipboard-tui/internal/tui"
 )
 
@@ -38,8 +39,15 @@ var tuiCmd = &cobra.Command{
 			text = tuiText
 		}
 
-		// 3. Initialize Bubble Tea Program
-		m := tui.NewModel(text)
+		// 3. Load config for TUI keybindings
+		cfg, err := config.LoadWithEnv(configPath)
+		if err != nil {
+			fmt.Printf("Failed to load configuration: %v\n", err)
+			os.Exit(1)
+		}
+
+		// 4. Initialize Bubble Tea Program
+		m := tui.NewModel(text, cfg.TUI)
 		var p *tea.Program
 
 		if isPiped {

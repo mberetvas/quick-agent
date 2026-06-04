@@ -11,49 +11,27 @@ import (
 func TestNewInitialModel(t *testing.T) {
 	theme := styles.DefaultTheme()
 	text := "test clipboard text"
-	m := NewInitialModel(text, theme)
+	m := NewInitialModel(text, theme, testKeyMap())
 
 	if m.clipboardText != text {
 		t.Errorf("Expected clipboardText to be %q, got %q", text, m.clipboardText)
 	}
-
-	if m.cursor != 0 {
-		t.Errorf("Expected initial cursor to be 0, got %d", m.cursor)
-	}
-
-	if len(m.options) == 0 {
-		t.Error("Expected options to be initialized, got empty list")
-	}
 }
 
-func TestInitialModel_Update_Navigation(t *testing.T) {
-	theme := styles.DefaultTheme()
-	m := *NewInitialModel("hello", theme)
+func TestInitialModel_Update_ShowOptions(t *testing.T) {
+	m := *NewInitialModel("hello", styles.DefaultTheme(), testKeyMap())
 
-	// Test cursor wraps around on key up
-	msgUp := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("k")}
-	m, _ = m.Update(msgUp)
-	expectedCursor := len(m.options) - 1
-	if m.cursor != expectedCursor {
-		t.Errorf("Expected cursor to wrap to %d, got %d", expectedCursor, m.cursor)
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if cmd == nil {
+		t.Fatal("expected ShowOptionsEvent command")
 	}
-
-	// Test cursor moves down on key down
-	msgDown := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")}
-	m, _ = m.Update(msgDown)
-	if m.cursor != 0 {
-		t.Errorf("Expected cursor to move back to 0, got %d", m.cursor)
-	}
-
-	m, _ = m.Update(msgDown)
-	if m.cursor != 1 {
-		t.Errorf("Expected cursor to move to 1, got %d", m.cursor)
+	if _, ok := cmd().(ShowOptionsEvent); !ok {
+		t.Fatalf("expected ShowOptionsEvent, got %T", cmd())
 	}
 }
 
 func TestInitialModel_Update_Quit(t *testing.T) {
-	theme := styles.DefaultTheme()
-	m := *NewInitialModel("hello", theme)
+	m := *NewInitialModel("hello", styles.DefaultTheme(), testKeyMap())
 
 	msgEsc := tea.KeyMsg{Type: tea.KeyEscape}
 	_, cmd := m.Update(msgEsc)
@@ -71,7 +49,7 @@ func TestInitialModel_Update_Quit(t *testing.T) {
 func TestInitialModel_View(t *testing.T) {
 	theme := styles.DefaultTheme()
 	text := "special testing content"
-	m := NewInitialModel(text, theme)
+	m := NewInitialModel(text, theme, testKeyMap())
 
 	viewStr := m.View()
 
@@ -79,34 +57,30 @@ func TestInitialModel_View(t *testing.T) {
 		t.Errorf("Expected view to display clipboard content %q", text)
 	}
 
-	if !strings.Contains(viewStr, "Refactor/Improve") {
-		t.Error("Expected view to show options list")
+	if !strings.Contains(viewStr, "choose action") {
+		t.Error("Expected view to prompt for action selection")
 	}
 }
 
 func TestInitialModel_View_RuneSafeTruncate(t *testing.T) {
 	theme := styles.DefaultTheme()
-	// Create a string of 250 multi-byte runes: "世界" repeated 125 times
 	var builder strings.Builder
 	for i := 0; i < 125; i++ {
 		builder.WriteString("世界")
 	}
 	text := builder.String()
-	m := NewInitialModel(text, theme)
+	m := NewInitialModel(text, theme, testKeyMap())
 
 	viewStr := m.View()
 
-	// The text should be truncated around 197 runes, ending with "世..."
 	if !strings.Contains(viewStr, "世...") {
 		t.Errorf("Expected view to contain safely-truncated multi-byte text ending with '世...', but got: %s", viewStr)
 	}
 
-	// Double check that multiple copies of the CJK character were preserved in the view
 	if !strings.Contains(viewStr, "世界") {
 		t.Errorf("Expected view to contain the repeated CJK characters '世界', but got: %s", viewStr)
 	}
 
-	// Confirm that no invalid/broken unicode replacement characters (U+FFFD) are present in the output
 	if strings.Contains(viewStr, "\uFFFD") {
 		t.Error("View contains replacement character \uFFFD (bad split UTF-8)")
 	}
