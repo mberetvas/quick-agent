@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/yourname/clipboard-tui/internal/version"
 )
 
 var (
@@ -16,6 +18,14 @@ var rootCmd = &cobra.Command{
 	Short: "AI-powered clipboard supercharger",
 }
 
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print version information",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println(version.String())
+	},
+}
+
 func main() {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
@@ -23,6 +33,10 @@ func main() {
 }
 
 func init() {
+	rootCmd.Version = version.String()
+	rootCmd.SetVersionTemplate("{{.Version}}\n")
+
+	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(daemonCmd)
 	rootCmd.AddCommand(tuiCmd)
 	rootCmd.AddCommand(configCmd)

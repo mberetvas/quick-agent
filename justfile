@@ -9,9 +9,13 @@ default:
     just --list
 
 # Build the binary with the platform-specific extension
-build:
-    go build -o {{BINARY}} {{BIN_PATH}}
+build version="dev":
+    go build -ldflags "-s -w -X github.com/yourname/clipboard-tui/internal/version.Version={{version}}" -o {{BINARY}} {{BIN_PATH}}
     @echo "✓ Built {{BINARY}}"
+
+# Build all arch binaries for the current OS into dist/
+build-dist version="dev":
+    VERSION={{version}} bash ./scripts/build.sh
 
 # Run the TUI
 run:

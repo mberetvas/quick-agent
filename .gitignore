@@ -27,6 +27,12 @@ go.work.sum
 # env file
 .env
 
+# Release artifacts
+/dist/
+/release/
+clipboard-tui
+clipboard-tui.exe
+
 # Editor/IDE
 # .idea/
 # .vscode/

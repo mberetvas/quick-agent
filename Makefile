@@ -1,10 +1,15 @@
-.PHONY: build test test-race test-short test-integration test-cover bench e2e manual
+.PHONY: build build-dist test test-race test-short test-integration test-cover bench e2e manual
 
 BINARY := clipboard-tui
 PKG := ./cmd/clipboard-tui
+VERSION ?= dev
+LDFLAGS := -s -w -X github.com/yourname/clipboard-tui/internal/version.Version=$(VERSION)
 
 build:
-	go build -o $(BINARY) $(PKG)
+	CGO_ENABLED=1 go build -ldflags "$(LDFLAGS)" -o $(BINARY) $(PKG)
+
+build-dist:
+	bash ./scripts/build.sh
 
 test:
 	go test -v ./...
