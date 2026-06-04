@@ -5,7 +5,9 @@ import (
 
 	"github.com/charmbracelet/bubbletea"
 
+	"github.com/yourname/clipboard-tui/internal/clipboard"
 	"github.com/yourname/clipboard-tui/internal/config"
+	"github.com/yourname/clipboard-tui/internal/llm"
 	"github.com/yourname/clipboard-tui/internal/tui/models"
 	"github.com/yourname/clipboard-tui/internal/tui/styles"
 )
@@ -28,28 +30,41 @@ type Model struct {
 	currentView ViewType
 	viewStack   []ViewType
 
+	cfg           *config.Config
 	clipboardText string
+	llmClient     llm.LLMClient
+	prompts       *llm.PromptRegistry
 	theme         styles.Theme
 	keys          models.KeyMap
+	cb            clipboard.Clipboard
 
 	InitialModel *models.InitialModel
 	OptionsModel *models.OptionsModel
+	ResultModel  *models.ResultModel
 
 	width  int
 	height int
 }
 
 // NewModel creates the root TUI model.
-func NewModel(clipboardText string, tuiCfg config.TUIConfig) *Model {
+func NewModel(clipboardText string, cfg *config.Config, client llm.LLMClient) *Model {
+	if cfg == nil {
+		cfg = config.Default()
+	}
 	theme := styles.DefaultTheme()
-	keys := models.NewKeyMap(tuiCfg)
+	keys := models.NewKeyMap(cfg.TUI)
+	prompts := llm.NewPromptRegistry()
 
 	return &Model{
 		currentView:   ViewInitial,
 		viewStack:     []ViewType{ViewInitial},
+		cfg:           cfg,
 		clipboardText: clipboardText,
+		llmClient:     client,
+		prompts:       prompts,
 		theme:         theme,
 		keys:          keys,
+		cb:            clipboard.SystemClipboard{},
 		InitialModel:  models.NewInitialModel(clipboardText, theme, keys),
 		OptionsModel:  models.NewOptionsModel(theme, keys),
 	}
@@ -92,6 +107,20 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.PopView()
 		return m, nil
 
+	case models.ActionSelectedEvent:
+		m.ResultModel = models.NewResultModel(
+			msg.Action,
+			m.clipboardText,
+			m.llmClient,
+			m.prompts,
+			m.theme,
+			m.keys,
+			m.cb,
+			m.cfg.TUI.StreamingDelayMS,
+		)
+		m.PushView(ViewResult)
+		return m, m.ResultModel.Init()
+
 	case models.ShowViewEvent:
 		if v, ok := viewFromName(msg.View); ok {
 			m.PushView(v)
@@ -119,6 +148,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var newOpts models.OptionsModel
 		newOpts, cmd = m.OptionsModel.Update(msg)
 		m.OptionsModel = &newOpts
+	case ViewResult:
+		if m.ResultModel != nil {
+			var newResult models.ResultModel
+			newResult, cmd = m.ResultModel.Update(msg)
+			m.ResultModel = &newResult
+		}
 	}
 
 	return m, cmd
@@ -144,7 +179,10 @@ func (m *Model) View() string {
 	case ViewOptions:
 		return m.OptionsModel.View()
 	case ViewResult:
-		return m.stubView("Result")
+		if m.ResultModel != nil {
+			return m.ResultModel.View()
+		}
+		return "Loading..."
 	case ViewLanguagePicker:
 		return m.stubView("Language picker")
 	case ViewCustomPrompt:

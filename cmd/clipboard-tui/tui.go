@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/yourname/clipboard-tui/internal/config"
+	"github.com/yourname/clipboard-tui/internal/llm"
 	"github.com/yourname/clipboard-tui/internal/tui"
 )
 
@@ -46,8 +47,14 @@ var tuiCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		llmClient, err := llm.NewClientFromConfig(cfg)
+		if err != nil {
+			fmt.Printf("Failed to create LLM client: %v\n", err)
+			os.Exit(1)
+		}
+
 		// 4. Initialize Bubble Tea Program
-		m := tui.NewModel(text, cfg.TUI)
+		m := tui.NewModel(text, cfg, llmClient)
 		var p *tea.Program
 
 		if isPiped {

@@ -8,12 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/yourname/clipboard-tui/internal/config"
+	"github.com/yourname/clipboard-tui/internal/llm/retry"
 )
 
 const defaultBaseURL = "https://openrouter.ai/api/v1"
@@ -160,35 +160,12 @@ func (c *Client) Generate(ctx context.Context, prompt string) (<-chan string, <-
 }
 
 func (c *Client) postWithRetry(ctx context.Context, url string, body []byte, apiKey string) (*http.Response, error) {
-	attempts := c.llmCfg.RetryAttempts
-	if attempts < 1 {
-		attempts = 1
-	}
-	backoffs := c.llmCfg.RetryBackoff
-
 	client := c.httpClient
 	if client == nil {
 		client = http.DefaultClient
 	}
 
-	var lastErr error
-	for attempt := 0; attempt < attempts; attempt++ {
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-		if attempt > 0 {
-			delay := retryDelay(backoffs, attempt-1)
-			if delay > 0 {
-				timer := time.NewTimer(delay)
-				select {
-				case <-ctx.Done():
-					timer.Stop()
-					return nil, ctx.Err()
-				case <-timer.C:
-				}
-			}
-		}
-
+	resp, err := retry.DoHTTP(ctx, c.llmCfg, func() (*http.Response, error) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 		if err != nil {
 			return nil, err
@@ -196,63 +173,18 @@ func (c *Client) postWithRetry(ctx context.Context, url string, body []byte, api
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 		req.Header.Set("Accept", "text/event-stream")
-
-		resp, err := client.Do(req)
-		if err != nil {
-			lastErr = err
-			if !isRetryableError(err) || attempt == attempts-1 {
-				return nil, fmt.Errorf("openrouter request failed: %w", err)
-			}
-			continue
-		}
-
-		if isRetryableStatus(resp.StatusCode) {
-			lastErr = fmt.Errorf("openrouter returned status %s", resp.Status)
-			resp.Body.Close()
-			if attempt == attempts-1 {
-				return nil, lastErr
-			}
-			continue
-		}
-
-		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-			resp.Body.Close()
-			return nil, fmt.Errorf("openrouter client error: %s", resp.Status)
-		}
-
-		return resp, nil
+		return client.Do(req)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("openrouter request failed: %w", err)
 	}
 
-	return nil, lastErr
-}
+	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+		resp.Body.Close()
+		return nil, fmt.Errorf("openrouter client error: %s", resp.Status)
+	}
 
-func retryDelay(backoffs []int, attempt int) time.Duration {
-	if len(backoffs) == 0 {
-		return 0
-	}
-	idx := attempt
-	if idx >= len(backoffs) {
-		idx = len(backoffs) - 1
-	}
-	return time.Duration(backoffs[idx]) * time.Millisecond
-}
-
-func isRetryableStatus(code int) bool {
-	return code == http.StatusTooManyRequests || code >= 500
-}
-
-func isRetryableError(err error) bool {
-	if err == nil {
-		return false
-	}
-	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-		return false
-	}
-	var netErr net.Error
-	if errors.As(err, &netErr) {
-		return netErr.Timeout()
-	}
-	return true
+	return resp, nil
 }
 
 func (c *Client) readSSEStream(ctx context.Context, body io.Reader, tokens chan<- string, errs chan<- error) error {

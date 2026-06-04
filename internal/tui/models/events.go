@@ -11,6 +11,11 @@ type ShowViewEvent struct {
 	View string
 }
 
+// ActionSelectedEvent requests the result view for an LLM action.
+type ActionSelectedEvent struct {
+	Action ActionID
+}
+
 // View name constants used with ShowViewEvent.
 const (
 	ViewNameResult         = "result"

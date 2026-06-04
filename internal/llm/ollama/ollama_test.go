@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -27,7 +28,7 @@ func TestOllamaHealthCheck(t *testing.T) {
 		Timeout: 2,
 	}
 
-	client := NewClient(cfg)
+	client := NewClient(cfg, config.DefaultLLMConfig())
 	err := client.HealthCheck(context.Background())
 	if err != nil {
 		t.Fatalf("expected healthcheck to pass, got error: %v", err)
@@ -45,7 +46,7 @@ func TestOllamaHealthCheck_Error(t *testing.T) {
 		Timeout: 2,
 	}
 
-	client := NewClient(cfg)
+	client := NewClient(cfg, config.DefaultLLMConfig())
 	err := client.HealthCheck(context.Background())
 	if err == nil {
 		t.Fatal("expected healthcheck to fail on non-OK code, but got nil")
@@ -74,7 +75,7 @@ func TestOllamaGenerateStream(t *testing.T) {
 		Model: "llama3:8b",
 	}
 
-	client := NewClient(cfg)
+	client := NewClient(cfg, config.DefaultLLMConfig())
 	tokens, errs, err := client.Generate(context.Background(), "Greet me")
 	if err != nil {
 		t.Fatalf("Generate failed: %v", err)
@@ -123,7 +124,7 @@ func TestOllamaGenerateStream_ScannerError(t *testing.T) {
 		Model: "llama3:8b",
 	}
 
-	client := NewClient(cfg)
+	client := NewClient(cfg, config.DefaultLLMConfig())
 	tokens, errs, err := client.Generate(context.Background(), "Greet me")
 	if err != nil {
 		t.Fatalf("Generate failed: %v", err)
@@ -151,6 +152,50 @@ func TestOllamaGenerateStream_ScannerError(t *testing.T) {
 	}
 }
 
+func TestOllamaGenerate_retries_on_503(t *testing.T) {
+	var calls atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/generate" {
+			http.NotFound(w, r)
+			return
+		}
+		n := calls.Add(1)
+		if n == 1 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, `{"response":"ok","done":true}`)
+	}))
+	defer server.Close()
+
+	client := NewClient(config.OllamaConfig{URL: server.URL, Model: "test"}, config.LLMConfig{
+		RetryAttempts: 3,
+		RetryBackoff:  []int{10},
+	})
+
+	tokens, errs, err := client.Generate(context.Background(), "hi")
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+	var got string
+	for tok := range tokens {
+		got += tok
+	}
+	for err := range errs {
+		if err != nil {
+			t.Fatalf("stream error: %v", err)
+		}
+	}
+	if got != "ok" {
+		t.Errorf("got %q, want ok", got)
+	}
+	if calls.Load() != 2 {
+		t.Errorf("expected 2 HTTP calls, got %d", calls.Load())
+	}
+}
+
 func BenchmarkOllamaGenerate(b *testing.B) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -160,7 +205,7 @@ func BenchmarkOllamaGenerate(b *testing.B) {
 	defer server.Close()
 
 	cfg := config.OllamaConfig{URL: server.URL, Model: "llama3:8b"}
-	client := NewClient(cfg)
+	client := NewClient(cfg, config.DefaultLLMConfig())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

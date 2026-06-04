@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -9,8 +10,31 @@ import (
 	"github.com/yourname/clipboard-tui/internal/tui/models"
 )
 
+type testLLM struct {
+	tokens []string
+}
+
+func (m *testLLM) Generate(ctx context.Context, prompt string) (<-chan string, <-chan error, error) {
+	ch := make(chan string, len(m.tokens))
+	for _, t := range m.tokens {
+		ch <- t
+	}
+	close(ch)
+	errCh := make(chan error)
+	close(errCh)
+	return ch, errCh, nil
+}
+
+func (m *testLLM) HealthCheck(ctx context.Context) error { return nil }
+
+func testModel(text string) *Model {
+	cfg := config.Default()
+	cfg.TUI.StreamingDelayMS = 0
+	return NewModel(text, cfg, &testLLM{tokens: []string{"ok"}})
+}
+
 func TestViewStack_push_options_from_initial(t *testing.T) {
-	m := NewModel("hello", config.DefaultTUIConfig())
+	m := testModel("hello")
 
 	updated, _ := m.Update(models.ShowOptionsEvent{})
 	root := updated.(*Model)
@@ -27,7 +51,7 @@ func TestViewStack_push_options_from_initial(t *testing.T) {
 }
 
 func TestViewStack_pop_back_to_initial(t *testing.T) {
-	m := NewModel("hello", config.DefaultTUIConfig())
+	m := testModel("hello")
 	m.PushView(ViewOptions)
 
 	updated, _ := m.Update(models.BackEvent{})
@@ -41,23 +65,50 @@ func TestViewStack_pop_back_to_initial(t *testing.T) {
 	}
 }
 
-func TestViewStack_select_action_pushes_stub(t *testing.T) {
-	m := NewModel("hello", config.DefaultTUIConfig())
+func TestViewStack_action_selected_pushes_result(t *testing.T) {
+	m := testModel("hello")
 	m.PushView(ViewOptions)
 
-	updated, _ := m.Update(models.ShowViewEvent{View: models.ViewNameResult})
+	updated, cmd := m.Update(models.ActionSelectedEvent{Action: models.ActionRefine})
 	root := updated.(*Model)
 
 	if root.currentView != ViewResult {
 		t.Errorf("expected ViewResult, got %v", root.currentView)
 	}
-	if len(root.viewStack) != 3 {
-		t.Fatalf("expected stack depth 3, got %d: %v", len(root.viewStack), root.viewStack)
+	if root.ResultModel == nil {
+		t.Fatal("expected ResultModel")
+	}
+	if cmd == nil {
+		t.Fatal("expected Init cmd for result model")
+	}
+}
+
+func TestViewStack_action_selected_streams_result(t *testing.T) {
+	m := testModel("hello")
+	m.PushView(ViewOptions)
+
+	updated, cmd := m.Update(models.ActionSelectedEvent{Action: models.ActionRefine})
+	root := updated.(*Model)
+
+	for i := 0; i < 20 && cmd != nil; i++ {
+		msg := cmd()
+		if msg == nil {
+			break
+		}
+		var next tea.Cmd
+		updated, next = root.Update(msg)
+		root = updated.(*Model)
+		cmd = next
+	}
+
+	view := root.View()
+	if !strings.Contains(view, "ok") {
+		t.Errorf("expected streamed result in view, got:\n%s", view)
 	}
 }
 
 func TestInitial_enter_navigates_to_options(t *testing.T) {
-	m := NewModel("hello", config.DefaultTUIConfig())
+	m := testModel("hello")
 
 	_, cmd := m.InitialModel.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	if cmd == nil {
@@ -73,7 +124,7 @@ func TestInitial_enter_navigates_to_options(t *testing.T) {
 }
 
 func TestOptions_esc_pops_to_initial(t *testing.T) {
-	m := NewModel("hello", config.DefaultTUIConfig())
+	m := testModel("hello")
 	m.PushView(ViewOptions)
 
 	newOpts, cmd := m.OptionsModel.Update(tea.KeyMsg{Type: tea.KeyEscape})
@@ -90,21 +141,22 @@ func TestOptions_esc_pops_to_initial(t *testing.T) {
 	}
 }
 
-func TestStubView_esc_pops_to_options(t *testing.T) {
-	m := NewModel("hello", config.DefaultTUIConfig())
+func TestResultView_esc_pops_to_options(t *testing.T) {
+	m := testModel("hello")
 	m.PushView(ViewOptions)
-	m.PushView(ViewResult)
+	updated, _ := m.Update(models.ActionSelectedEvent{Action: models.ActionRefine})
+	m = updated.(*Model)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
 	final := updated.(*Model)
 
 	if final.currentView != ViewOptions {
-		t.Errorf("expected options after stub back, got %v", final.currentView)
+		t.Errorf("expected options after result back, got %v", final.currentView)
 	}
 }
 
 func TestOptions_view_lists_all_actions(t *testing.T) {
-	m := NewModel("hello", config.DefaultTUIConfig())
+	m := testModel("hello")
 	m.PushView(ViewOptions)
 
 	view := m.View()

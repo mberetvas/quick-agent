@@ -10,19 +10,21 @@ import (
 	"time"
 
 	"github.com/yourname/clipboard-tui/internal/config"
+	"github.com/yourname/clipboard-tui/internal/llm/retry"
 )
 
 // OllamaClient implements the llm.LLMClient interface for the local Ollama API.
 type OllamaClient struct {
-	cfg config.OllamaConfig
+	cfg    config.OllamaConfig
+	llmCfg config.LLMConfig
 }
 
 // NewClient returns an initialized OllamaClient using the configured parameters.
-func NewClient(cfg config.OllamaConfig) *OllamaClient {
+func NewClient(cfg config.OllamaConfig, llmCfg config.LLMConfig) *OllamaClient {
 	if cfg.URL == "" {
 		cfg.URL = "http://localhost:11434"
 	}
-	return &OllamaClient{cfg: cfg}
+	return &OllamaClient{cfg: cfg, llmCfg: llmCfg}
 }
 
 // Request represents the payload for the Ollama /api/generate endpoint.
@@ -91,17 +93,16 @@ func (oc *OllamaClient) Generate(ctx context.Context, prompt string) (<-chan str
 		return nil, nil, fmt.Errorf("failed to marshal request payload: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonBytes))
-	if err != nil {
-		return nil, nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
 
-	client := &http.Client{
-		// Note: Don't set overall client.Timeout when streaming, relies on context cancellation
-	}
-
-	resp, err := client.Do(req)
+	resp, err := retry.DoHTTP(ctx, oc.llmCfg, func() (*http.Response, error) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(jsonBytes))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		return client.Do(req)
+	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("Ollama generate request failed: %w", err)
 	}

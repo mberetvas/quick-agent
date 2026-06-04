@@ -14,8 +14,6 @@ import (
 	"github.com/yourname/clipboard-tui/internal/config"
 	"github.com/yourname/clipboard-tui/internal/hotkey"
 	"github.com/yourname/clipboard-tui/internal/llm"
-	"github.com/yourname/clipboard-tui/internal/llm/ollama"
-	"github.com/yourname/clipboard-tui/internal/llm/openrouter"
 	"github.com/yourname/clipboard-tui/internal/terminal"
 )
 
@@ -97,22 +95,18 @@ var testLLMCmd = &cobra.Command{
 
 		inputText := strings.Join(args, " ")
 
-		backend := cfg.Backend
 		if cmd.Flags().Changed("backend") {
-			backend = debugLLMBackend
+			cfg.Backend = debugLLMBackend
 		}
 
-		var client llm.LLMClient
-		var healthTarget string
-		switch backend {
-		case "ollama":
-			client = ollama.NewClient(cfg.Ollama)
-			healthTarget = cfg.Ollama.URL
-		case "openrouter":
-			client = openrouter.NewClient(cfg.OpenRouter, cfg.LLM)
+		client, err := llm.NewClientFromConfig(cfg)
+		if err != nil {
+			return err
+		}
+
+		healthTarget := cfg.Ollama.URL
+		if cfg.Backend == "openrouter" {
 			healthTarget = "https://openrouter.ai/api/v1"
-		default:
-			return fmt.Errorf("unsupported backend: %s (use ollama or openrouter)", backend)
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -128,7 +122,7 @@ var testLLMCmd = &cobra.Command{
 		}()
 
 		// 1. Healthcheck verification first
-		fmt.Printf("Performing healthcheck on backend '%s' (%s)...\n", backend, healthTarget)
+		fmt.Printf("Performing healthcheck on backend '%s' (%s)...\n", cfg.Backend, healthTarget)
 		if err := client.HealthCheck(ctx); err != nil {
 			return fmt.Errorf("pre-generation LLM healthcheck failed: %w", err)
 		}

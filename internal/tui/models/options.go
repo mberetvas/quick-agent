@@ -74,8 +74,13 @@ func (m OptionsModel) Update(msg tea.Msg) (OptionsModel, tea.Cmd) {
 				m.cursor = 0
 			}
 		case m.keys.Match("select", key):
-			view := targetViewForAction(m.actions[m.cursor].ID)
-			return m, func() tea.Msg { return ShowViewEvent{View: view} }
+			action := m.actions[m.cursor].ID
+			switch action {
+			case ActionTranslate, ActionCustom:
+				return m, func() tea.Msg { return ShowViewEvent{View: targetViewForAction(action)} }
+			default:
+				return m, func() tea.Msg { return ActionSelectedEvent{Action: action} }
+			}
 		case m.keys.Match("back", key):
 			return m, func() tea.Msg { return BackEvent{} }
 		}

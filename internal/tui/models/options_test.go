@@ -58,15 +58,17 @@ func TestOptionsModel_Update_Back(t *testing.T) {
 
 func TestOptionsModel_Update_Select(t *testing.T) {
 	tests := []struct {
-		name       string
-		cursor     int
-		wantView   string
+		name         string
+		cursor       int
+		wantAction   ActionID
+		wantView     string
+		wantViewEv   bool
 	}{
-		{name: "refine", cursor: 0, wantView: ViewNameResult},
-		{name: "translate", cursor: 1, wantView: ViewNameLanguagePicker},
-		{name: "summarize", cursor: 2, wantView: ViewNameResult},
-		{name: "explain", cursor: 3, wantView: ViewNameResult},
-		{name: "custom", cursor: 4, wantView: ViewNameCustomPrompt},
+		{name: "refine", cursor: 0, wantAction: ActionRefine},
+		{name: "translate", cursor: 1, wantView: ViewNameLanguagePicker, wantViewEv: true},
+		{name: "summarize", cursor: 2, wantAction: ActionSummarize},
+		{name: "explain", cursor: 3, wantAction: ActionExplain},
+		{name: "custom", cursor: 4, wantView: ViewNameCustomPrompt, wantViewEv: true},
 	}
 
 	for _, tt := range tests {
@@ -76,14 +78,25 @@ func TestOptionsModel_Update_Select(t *testing.T) {
 
 			_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 			if cmd == nil {
-				t.Fatal("expected ShowViewEvent command")
+				t.Fatal("expected navigation command")
 			}
-			ev, ok := cmd().(ShowViewEvent)
+			msg := cmd()
+			if tt.wantViewEv {
+				ev, ok := msg.(ShowViewEvent)
+				if !ok {
+					t.Fatalf("expected ShowViewEvent, got %T", msg)
+				}
+				if ev.View != tt.wantView {
+					t.Errorf("expected view %q, got %q", tt.wantView, ev.View)
+				}
+				return
+			}
+			ev, ok := msg.(ActionSelectedEvent)
 			if !ok {
-				t.Fatalf("expected ShowViewEvent, got %T", cmd())
+				t.Fatalf("expected ActionSelectedEvent, got %T", msg)
 			}
-			if ev.View != tt.wantView {
-				t.Errorf("expected view %q, got %q", tt.wantView, ev.View)
+			if ev.Action != tt.wantAction {
+				t.Errorf("expected action %q, got %q", tt.wantAction, ev.Action)
 			}
 		})
 	}

@@ -23,12 +23,12 @@ func NewMockOllamaServer(responses []string) *httptest.Server {
 				return
 			}
 			w.Header().Set("Content-Type", "application/x-ndjson")
-			for _, resp := range responses[index : index+1] {
+			for _, resp := range responses {
 				line := fmt.Sprintf(`{"response":%q}`, resp)
 				_, _ = w.Write([]byte(line + "\n"))
 			}
 			_, _ = w.Write([]byte(`{"done":true}` + "\n"))
-			index++
+			index = len(responses)
 			return
 		default:
 			http.NotFound(w, r)
@@ -53,10 +53,10 @@ func NewMockOpenRouterServer(responses []string) *httptest.Server {
 			return
 		}
 		w.Header().Set("Content-Type", "text/event-stream")
-		for _, resp := range responses[index : index+1] {
+		for _, resp := range responses {
 			_, _ = fmt.Fprintf(w, "data: {\"choices\":[{\"delta\":{\"content\":%q}}]}\n\n", resp)
 		}
 		_, _ = fmt.Fprint(w, "data: [DONE]\n\n")
-		index++
+		index = len(responses)
 	}))
 }
