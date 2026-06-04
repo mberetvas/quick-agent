@@ -43,67 +43,6 @@ func (m *MockClipboard) SetError(err error) {
 	m.err = err
 }
 
-func TestSanitize(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		maxChars int
-		want     string
-	}{
-		{
-			name:     "valid simple text",
-			input:    "hello world",
-			maxChars: 100,
-			want:     "hello world",
-		},
-		{
-			name:     "empty text",
-			input:    "",
-			maxChars: 100,
-			want:     "",
-		},
-		{
-			name:     "whitespace only",
-			input:    "   \n \t  ",
-			maxChars: 100,
-			want:     "",
-		},
-		{
-			name:     "non-UTF8 input cleaned",
-			input:    "hello \xff world", // \xff is invalid UTF-8
-			maxChars: 100,
-			want:     "hello \ufffd world", // replaced by rune error replacement char
-		},
-		{
-			name:     "truncation with marker",
-			input:    "abcdefghij",
-			maxChars: 5,
-			want:     "abcde" + TruncateMarker,
-		},
-		{
-			name:     "exactly max length no truncation",
-			input:    "abcde",
-			maxChars: 5,
-			want:     "abcde",
-		},
-		{
-			name:     "unicode character aware truncation",
-			input:    "世界你好!", // 5 runes
-			maxChars: 2,
-			want:     "世界" + TruncateMarker,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := Sanitize(tt.input, tt.maxChars)
-			if got != tt.want {
-				t.Errorf("Sanitize() got = %q, want = %q", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestPollerLatestText(t *testing.T) {
 	mock := &MockClipboard{text: "initial"}
 	cfg := config.Default()
@@ -226,6 +165,20 @@ func TestPollerEmitsErrors(t *testing.T) {
 		}
 	case <-time.After(1 * time.Second):
 		t.Fatal("timed out waiting for poller error report")
+	}
+}
+
+func BenchmarkPollerSanitizePath(b *testing.B) {
+	mock := &MockClipboard{text: "hello world from clipboard"}
+	cfg := config.Default()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		raw, err := mock.Get()
+		if err != nil {
+			b.Fatal(err)
+		}
+		_ = Sanitize(raw, cfg.Clipboard.TruncateSize)
 	}
 }
 

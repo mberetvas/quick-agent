@@ -150,3 +150,30 @@ func TestOllamaGenerateStream_ScannerError(t *testing.T) {
 		t.Fatal("timed out waiting for error reporting")
 	}
 }
+
+func BenchmarkOllamaGenerate(b *testing.B) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintln(w, `{"response":"test","done":false}`)
+		fmt.Fprintln(w, `{"response":"","done":true}`)
+	}))
+	defer server.Close()
+
+	cfg := config.OllamaConfig{URL: server.URL, Model: "llama3:8b"}
+	client := NewClient(cfg)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		tokens, errs, err := client.Generate(context.Background(), "benchmark")
+		if err != nil {
+			b.Fatalf("Generate: %v", err)
+		}
+		for range tokens {
+		}
+		for err := range errs {
+			if err != nil {
+				b.Fatalf("stream error: %v", err)
+			}
+		}
+	}
+}

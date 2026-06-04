@@ -7,13 +7,13 @@ on:
     branches: [main, master]
 
 jobs:
-  build:
-    name: Build & Vet
+  test:
+    name: Test
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,6 +26,74 @@ jobs:
 
       - name: Vet
         run: go vet ./...
+
+      - name: Unit tests
+        run: go test -v -race -short ./...
+
+  integration:
+    name: Integration (Linux + Xvfb)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xclip gcc libx11-dev libxtst-dev
+
+      - name: Integration tests
+        env:
+          CGO_ENABLED: 1
+          DISPLAY: :99
+        run: |
+          Xvfb :99 -screen 0 1024x768x16 &
+          sleep 1
+          go test -v -tags=integration ./internal/...
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+
+      - name: Generate coverage
+        run: go test -coverprofile=coverage.out ./...
+
+      - name: Coverage summary
+        run: go tool cover -func=coverage.out
+
+  build:
+    name: Build & Vet
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
 
       - name: Build
         run: go build ./...
@@ -50,3 +118,19 @@ jobs:
 
       - name: Build CLI with gohook
         run: go build -o /dev/null ./cmd/clipboard-tui
+
+  debug-on-failure:
+    name: Debug environment
+    runs-on: ubuntu-latest
+    if: failure()
+    needs: [test, integration, coverage, build, build-cgo]
+    steps:
+      - name: Debug
+        run: |
+          echo "=== Environment ==="
+          env
+          echo "=== Go Version ==="
+          go version
+          echo "=== OS Info ==="
+          uname -a
+          cat /etc/os-release || true

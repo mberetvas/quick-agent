@@ -87,6 +87,28 @@ var setKeyCmd = &cobra.Command{
 	},
 }
 
+var validateCmd = &cobra.Command{
+	Use:   "validate",
+	Short: "Validate the configuration file",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := config.LoadWithEnv(configPath)
+		if err != nil {
+			return err
+		}
+
+		if cmd.Flags().Changed("log-level") {
+			cfg.Logging.Level = logLevel
+		}
+
+		if err := cfg.Validate(); err != nil {
+			return fmt.Errorf("configuration is invalid: %w", err)
+		}
+
+		fmt.Println("Configuration is valid.")
+		return nil
+	},
+}
+
 var getKeyCmd = &cobra.Command{
 	Use:   "get-key <backend>",
 	Short: "Retrieve the API key for a backend from the system keyring",
@@ -110,6 +132,7 @@ var getKeyCmd = &cobra.Command{
 
 func init() {
 	configCmd.AddCommand(showCmd)
+	configCmd.AddCommand(validateCmd)
 	configCmd.AddCommand(setKeyCmd)
 	configCmd.AddCommand(getKeyCmd)
 }
