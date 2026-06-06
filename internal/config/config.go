@@ -182,16 +182,11 @@ func DefaultLLMConfig() LLMConfig {
 	}
 }
 
-// DefaultLoggingConfig returns a platform-specific default logging configuration
+// DefaultLoggingConfig returns the default logging configuration.
 func DefaultLoggingConfig() LoggingConfig {
-	home := os.Getenv("HOME")
-	if home == "" && runtime.GOOS == "windows" {
-		home = os.Getenv("USERPROFILE")
-	}
-	configDir := filepath.Join(home, ".config", "quick-agent")
 	return LoggingConfig{
 		Level:      "info",
-		File:       filepath.Join(configDir, "quick-agent.log"),
+		File:       filepath.Join(GetConfigDir(), "quick-agent.log"),
 		MaxSizeMB:  10,
 		MaxBackups: 5,
 		Console:    false,
@@ -206,15 +201,10 @@ func DefaultTerminalConfig() TerminalConfig {
 	}
 }
 
-// DefaultDaemonConfig returns a platform-specific default daemon configuration
+// DefaultDaemonConfig returns the default daemon configuration.
 func DefaultDaemonConfig() DaemonConfig {
-	home := os.Getenv("HOME")
-	if home == "" && runtime.GOOS == "windows" {
-		home = os.Getenv("USERPROFILE")
-	}
-	configDir := filepath.Join(home, ".config", "quick-agent")
 	return DaemonConfig{
-		PIDFile:   filepath.Join(configDir, "daemon.pid"),
+		PIDFile:   filepath.Join(GetConfigDir(), "daemon.pid"),
 		AutoStart: true,
 	}
 }
@@ -237,20 +227,22 @@ func Default() *Config {
 	}
 }
 
-// GetConfigDir returns the default platform-specific configuration directory
-func GetConfigDir() string {
-	if runtime.GOOS == "windows" {
-		appdata := os.Getenv("APPDATA")
-		if appdata != "" {
-			return filepath.Join(appdata, "quick-agent")
-		}
-		// Fallback
-		return filepath.Join(os.Getenv("USERPROFILE"), ".config", "quick-agent")
+func userHomeDir() string {
+	if home, err := os.UserHomeDir(); err == nil && home != "" {
+		return home
 	}
-	return filepath.Join(os.Getenv("HOME"), ".config", "quick-agent")
+	if home := os.Getenv("HOME"); home != "" {
+		return home
+	}
+	return os.Getenv("USERPROFILE")
 }
 
-// GetConfigPath returns the default platform-specific path to the config file
+// GetConfigDir returns the default configuration directory under the user home.
+func GetConfigDir() string {
+	return filepath.Join(userHomeDir(), ".quick-agent")
+}
+
+// GetConfigPath returns the default path to the config file.
 func GetConfigPath() string {
 	return filepath.Join(GetConfigDir(), "config.json")
 }

@@ -78,7 +78,7 @@ func TestCheckPermissions_insecurePermissions(t *testing.T) {
 	base := t.TempDir()
 	t.Setenv("HOME", base)
 
-	configDir := filepath.Join(base, ".config", "quick-agent")
+	configDir := filepath.Join(base, ".quick-agent")
 	if err := os.MkdirAll(configDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -96,7 +96,7 @@ func TestCheckPermissions_securePermissions(t *testing.T) {
 	base := t.TempDir()
 	t.Setenv("HOME", base)
 
-	configDir := filepath.Join(base, ".config", "quick-agent")
+	configDir := filepath.Join(base, ".quick-agent")
 	if err := os.MkdirAll(configDir, 0700); err != nil {
 		t.Fatal(err)
 	}

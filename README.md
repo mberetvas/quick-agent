@@ -153,8 +153,9 @@ Debounce defaults to 300 ms. Override in `config.json` under `hotkey`.
 
 | OS | Config directory | Config file |
 |----|------------------|-------------|
-| Linux / macOS | `~/.config/quick-agent/` | `config.json` |
-| Windows | `%APPDATA%\quick-agent\` | `config.json` |
+| All platforms | `~/.quick-agent/` (`%USERPROFILE%\.quick-agent\` on Windows) | `config.json` |
+
+**Note:** Config used to live under `~/.config/quick-agent/` (Linux/macOS) or `%APPDATA%\quick-agent\` (Windows). Those paths are no longer read automatically — move your files to `~/.quick-agent/` or pass `--config` / `CLIPBOARD_TUI_CONFIG`.
 
 Other paths (defaults):
 

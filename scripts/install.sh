@@ -114,9 +114,9 @@ _install_launchd() {
     <key>KeepAlive</key>
     <true/>
     <key>StandardErrorPath</key>
-    <string>${HOME}/.config/quick-agent/launchd.log</string>
+    <string>${HOME}/.quick-agent/launchd.log</string>
     <key>StandardOutPath</key>
-    <string>${HOME}/.config/quick-agent/launchd.log</string>
+    <string>${HOME}/.quick-agent/launchd.log</string>
 </dict>
 </plist>
 EOF

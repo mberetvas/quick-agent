@@ -8,18 +8,11 @@ import (
 
 func TestGetConfigDir_platformPaths(t *testing.T) {
 	base := t.TempDir()
-	if runtime.GOOS == "windows" {
-		t.Setenv("APPDATA", base)
-		want := filepath.Join(base, "quick-agent")
-		if got := GetConfigDir(); got != want {
-			t.Errorf("GetConfigDir() = %q, want %q", got, want)
-		}
-	} else {
-		t.Setenv("HOME", base)
-		want := filepath.Join(base, ".config", "quick-agent")
-		if got := GetConfigDir(); got != want {
-			t.Errorf("GetConfigDir() = %q, want %q", got, want)
-		}
+	t.Setenv("HOME", base)
+	t.Setenv("USERPROFILE", base)
+	want := filepath.Join(base, ".quick-agent")
+	if got := GetConfigDir(); got != want {
+		t.Errorf("GetConfigDir() = %q, want %q", got, want)
 	}
 }
 
@@ -36,13 +29,11 @@ func TestDefaultHotkeyConfig_matchesPlatform(t *testing.T) {
 
 func TestDefaultLoggingConfig_usesConfigDir(t *testing.T) {
 	base := t.TempDir()
-	if runtime.GOOS == "windows" {
-		t.Setenv("APPDATA", base)
-	} else {
-		t.Setenv("HOME", base)
-	}
+	t.Setenv("HOME", base)
+	t.Setenv("USERPROFILE", base)
 	logCfg := DefaultLoggingConfig()
-	if !filepath.IsAbs(logCfg.File) {
-		t.Fatalf("log file path not absolute: %q", logCfg.File)
+	want := filepath.Join(base, ".quick-agent", "quick-agent.log")
+	if logCfg.File != want {
+		t.Errorf("log file = %q, want %q", logCfg.File, want)
 	}
 }
