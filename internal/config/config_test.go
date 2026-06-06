@@ -338,7 +338,8 @@ func TestLoadWithEnvOverrides(t *testing.T) {
 	t.Setenv("CLIPBOARD_TUI_OLLAMA_MODEL", "overridden-model:latest")
 	t.Setenv("CLIPBOARD_TUI_HOTKEY_KEY", "x")
 	t.Setenv("CLIPBOARD_TUI_LOG_LEVEL", "debug")
-	t.Setenv("CLIPBOARD_TUI_TERMINAL", "cmd")
+	terminal := validTerminalForTest()
+	t.Setenv("CLIPBOARD_TUI_TERMINAL", terminal)
 
 	// Load using environmental support
 	loaded, err := LoadWithEnv(configPath)
@@ -361,7 +362,7 @@ func TestLoadWithEnvOverrides(t *testing.T) {
 	if loaded.Logging.Level != "debug" {
 		t.Errorf("env log level override failed, got '%s'", loaded.Logging.Level)
 	}
-	if loaded.Terminal.Emulator != "cmd" {
+	if loaded.Terminal.Emulator != terminal {
 		t.Errorf("env terminal override failed, got '%s'", loaded.Terminal.Emulator)
 	}
 }
