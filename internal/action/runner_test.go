@@ -226,3 +226,136 @@ func TestRunWithClient_VerboseHealthcheckFail(t *testing.T) {
 		t.Errorf("expected '[healthcheck] FAIL' in verbose output, got: %s", buf.String())
 	}
 }
+
+func TestRunWithClient_TranslateDefaultLanguage(t *testing.T) {
+	mc := &mockClient{tokens: []string{"Ik ben een dokter"}}
+	cfg := defaultCfg()
+	cfg.Prompts.TranslateTargetLanguage = "Dutch"
+
+	var buf bytes.Buffer
+	_, err := RunWithClient(context.Background(), Options{
+		Action:  "translate",
+		Text:    "I am a doctor",
+		Verbose: true,
+	}, &buf, mc, cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "Dutch") {
+		t.Errorf("expected config language 'Dutch' in prompt, got: %s", out)
+	}
+	if strings.Contains(out, "{{.Language}}") {
+		t.Errorf("rendered prompt still contains {{.Language}} placeholder: %s", out)
+	}
+}
+
+func TestRunWithClient_TranslateLanguageOverride(t *testing.T) {
+	mc := &mockClient{tokens: []string{"Bonjour"}}
+	cfg := defaultCfg()
+	cfg.Prompts.TranslateTargetLanguage = "English"
+
+	var buf bytes.Buffer
+	_, err := RunWithClient(context.Background(), Options{
+		Action:   "translate",
+		Text:     "Hello",
+		Language: "French",
+		Verbose:  true,
+	}, &buf, mc, cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "French") {
+		t.Errorf("expected overridden language 'French' in prompt, got: %s", out)
+	}
+	if strings.Contains(out, "English") && !strings.Contains(out, "French") {
+		t.Errorf("config language 'English' used instead of override 'French': %s", out)
+	}
+	if strings.Contains(out, "{{.Language}}") {
+		t.Errorf("rendered prompt still contains {{.Language}} placeholder: %s", out)
+	}
+}
+
+func TestRunWithClient_CopyMock(t *testing.T) {
+	mc := &mockClient{tokens: []string{"refined", " result"}}
+	cfg := defaultCfg()
+
+	var written string
+	mockWriter := func(s string) error {
+		written = s
+		return nil
+	}
+
+	var buf bytes.Buffer
+	result, err := RunWithClient(context.Background(), Options{
+		Action:          "refine",
+		Text:            "some text",
+		Copy:            true,
+		ClipboardWriter: mockWriter,
+	}, &buf, mc, cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if written != result {
+		t.Errorf("clipboard got %q, want %q", written, result)
+	}
+	if written != "refined result" {
+		t.Errorf("clipboard content = %q, want 'refined result'", written)
+	}
+}
+
+func TestRunWithClient_CopyWriteError(t *testing.T) {
+	mc := &mockClient{tokens: []string{"output"}}
+	cfg := defaultCfg()
+
+	mockWriter := func(_ string) error {
+		return errors.New("clipboard unavailable")
+	}
+
+	var buf bytes.Buffer
+	_, err := RunWithClient(context.Background(), Options{
+		Action:          "refine",
+		Text:            "some text",
+		Copy:            true,
+		ClipboardWriter: mockWriter,
+	}, &buf, mc, cfg)
+	if err == nil {
+		t.Fatal("expected clipboard write error")
+	}
+	if !strings.Contains(err.Error(), "clipboard write failed") {
+		t.Errorf("error = %v, want 'clipboard write failed'", err)
+	}
+}
+
+func TestRunWithClient_Summarize(t *testing.T) {
+	mc := &mockClient{tokens: []string{"• Point one\n", "• Point two\n"}}
+	cfg := defaultCfg()
+	var buf bytes.Buffer
+	result, err := RunWithClient(context.Background(), Options{
+		Action: "summarize",
+		Text:   "Long article text here",
+	}, &buf, mc, cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != "• Point one\n• Point two\n" {
+		t.Errorf("result = %q", result)
+	}
+}
+
+func TestRunWithClient_Explain(t *testing.T) {
+	mc := &mockClient{tokens: []string{"This code does X"}}
+	cfg := defaultCfg()
+	var buf bytes.Buffer
+	result, err := RunWithClient(context.Background(), Options{
+		Action: "explain",
+		Text:   "func main() {}",
+	}, &buf, mc, cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != "This code does X" {
+		t.Errorf("result = %q, want 'This code does X'", result)
+	}
+}

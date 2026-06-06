@@ -15,14 +15,15 @@ import (
 
 // Options configures a single action invocation.
 type Options struct {
-	Action     string // refine | translate | summarize | explain
-	Text       string
-	Language   string // translate only; empty → cfg.Prompts.TranslateTargetLanguage
-	Copy       bool
-	Verbose    bool
-	Backend    string
-	ConfigPath string
-	LogLevel   string
+	Action          string // refine | translate | summarize | explain
+	Text            string
+	Language        string // translate only; empty → cfg.Prompts.TranslateTargetLanguage
+	Copy            bool
+	ClipboardWriter func(string) error // injectable for testing; Run() sets a default when nil and Copy is true
+	Verbose         bool
+	Backend         string
+	ConfigPath      string
+	LogLevel        string
 }
 
 // Run loads config, creates the LLM client from config, and executes the action.
@@ -37,6 +38,9 @@ func Run(ctx context.Context, opts Options, out io.Writer) (string, error) {
 	client, err := llm.NewClientFromConfig(cfg)
 	if err != nil {
 		return "", err
+	}
+	if opts.Copy && opts.ClipboardWriter == nil {
+		opts.ClipboardWriter = clipboard.SystemClipboard{}.Set
 	}
 	return RunWithClient(ctx, opts, out, client, cfg)
 }
@@ -104,5 +108,11 @@ func RunWithClient(ctx context.Context, opts Options, out io.Writer, client llm.
 			}
 		}
 	}
-	return sb.String(), nil
+	result := sb.String()
+	if opts.Copy && opts.ClipboardWriter != nil {
+		if err := opts.ClipboardWriter(result); err != nil {
+			return result, fmt.Errorf("clipboard write failed: %w", err)
+		}
+	}
+	return result, nil
 }
