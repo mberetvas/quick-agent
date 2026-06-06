@@ -508,7 +508,6 @@ jobs:
 | Translate to French | ✅ | ✅ | French translation |
 | Summarize long text | ✅ | ✅ | Short summary |
 | Explain concept | ✅ | ✅ | Detailed explanation |
-| Custom prompt | ✅ | ✅ | Custom response |
 | Invalid API key | N/A | ✅ | "Invalid API key" error |
 | Ollama not running | ✅ | N/A | "Start Ollama" error |
 | Network timeout | ✅ | ✅ | Retry then error |
@@ -553,7 +552,7 @@ read
 
 # Test 4: Translate
 echo "Test 4: Copy English text, press hotkey, select 'Translate'"
-echo "Expected: Language picker, select language, get translation"
+echo "Expected: View streams English translation to target language configured in config.json"
 echo "Press Enter when done..."
 read
 

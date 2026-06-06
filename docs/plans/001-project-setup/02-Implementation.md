@@ -41,11 +41,8 @@ clipboard-tui/
 │       ├── models/
 │       │   ├── initial.go       # Initial view: clipboard text + options list
 │       │   ├── options.go       # Options menu view
-│       │   ├── language_picker.go # Language selection for translate
-│       │   ├── custom_prompt.go  # Custom prompt input view
 │       │   ├── result.go        # Streaming result display + Copy button
-│       │   ├── error.go         # Error display with action buttons
-│       │   └── setup.go         # First-run setup flow
+│       │   └── error.go         # Error display with Retry (r) and Back (esc/q) controls
 │       └── styles/
 │           └── theme.go      # Lipgloss style definitions, theme switching
 │
@@ -128,25 +125,24 @@ clipboard-tui/
 
 ---
 
-### Phase 3: Polish & Setup (Week 3-4)
-**Goal**: User experience - setup, errors, themes, edge cases
+### Phase 3: Polish & Error Handling (Week 3-4)
+**Goal**: User experience - error handling, retry mechanism, light theme, custom prompts, installer scripts
 
 | Task | File | Estimated Time | Dependencies |
 |------|------|---------------|--------------|
-| 3.1 Language picker view | internal/tui/models/language_picker.go | 4h | 2.6 |
-| 3.2 Custom prompt view | internal/tui/models/custom_prompt.go | 3h | 2.6 |
-| 3.3 Error view with actions | internal/tui/models/error.go | 4h | 2.6 |
-| 3.4 Setup flow view | internal/tui/models/setup.go | 6h | 3.1, 3.2 |
+| 3.1 Prompts config schema | internal/config/config.go | 2h | Phase 1 |
+| 3.2 Update PromptRegistry | internal/llm/llm.go | 2h | 3.1 |
+| 3.3 Simplify actions & events | internal/tui/models/options.go, events.go | 2h | Phase 2 |
+| 3.4 Wire configuration prompts | internal/tui/app.go | 2h | 3.2, 3.3 |
 | 3.5 UserError structure | internal/errors/errors.go | 2h | None |
-| 3.6 Error handling in TUI | internal/tui/app.go | 3h | 3.5 |
-| 3.7 Theming system | internal/tui/styles/theme.go | 4h | 1.9 |
-| 3.8 Auto-detect terminal theme | internal/tui/styles/theme.go | 3h | 3.7 |
-| 3.9 Clipboard edge cases | internal/clipboard/sanitize.go | 2h | 1.11 |
-| 3.10 Logging system | internal/logging/logging.go | 3h | None |
-| 3.11 Daemon PID file | internal/daemon/pidfile.go | 2h | 2.4 |
-| 3.12 Install scripts | scripts/install.sh, install.ps1 | 4h | None |
+| 3.6 ErrorModel view component | internal/tui/models/error.go | 3h | 3.5 |
+| 3.7 Wire error view in App | internal/tui/app.go | 3h | 3.6 |
+| 3.8 ResultModel retry & error | internal/tui/models/result.go | 3h | 3.7 |
+| 3.9 Light Theme & Switching | internal/tui/styles/theme.go | 2h | Phase 1 |
+| 3.10 Install Script (sh) | scripts/install.sh | 4h | None |
+| 3.11 Install Script (ps1) | scripts/install.ps1 | 3h | None |
 
-**Phase 3 Deliverable**: Polished user experience with setup flow, error handling, theming
+**Phase 3 Deliverable**: Robust error view with keyboard retry, custom prompts read from config, a light theme toggle, and OS-specific setup/daemon auto-start options. Tasks 3.9/3.10/3.11 from the original plan (sanitization, logging, and daemon PID locking) are already implemented.
 
 ---
 
@@ -299,9 +295,6 @@ type model struct {
     optionsModel      *OptionsModel
     resultModel       *ResultModel
     errorModel        *ErrorModel
-    setupModel        *SetupModel
-    languagePicker    *LanguagePickerModel
-    customPrompt      *CustomPromptModel
     
     // Dimensions
     width  int

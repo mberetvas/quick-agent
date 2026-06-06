@@ -21,6 +21,7 @@ type Config struct {
 	Logging    LoggingConfig    `json:"logging"`
 	Daemon     DaemonConfig     `json:"daemon"`
 	Terminal   TerminalConfig   `json:"terminal"`
+	Prompts    PromptsConfig    `json:"prompts"`
 }
 
 // OllamaConfig holds configuration details for the Ollama backend
@@ -87,6 +88,27 @@ type DaemonConfig struct {
 type TerminalConfig struct {
 	Emulator    string `json:"emulator"`     // "auto" or profile id: wt, cmd, terminal, gnome-terminal, ...
 	FallbackDir string `json:"fallback_dir"` // empty = default under GetConfigDir()/output
+}
+
+// PromptsConfig holds override strings for the built-in prompt templates.
+// Any field left empty falls back to the built-in default.
+type PromptsConfig struct {
+	TranslateTargetLanguage string `json:"translate_target_language"` // default "English"
+	Refine                  string `json:"refine"`
+	Translate               string `json:"translate"`
+	Summarize               string `json:"summarize"`
+	Explain                 string `json:"explain"`
+}
+
+// DefaultPromptsConfig returns sensible defaults for all prompt templates.
+func DefaultPromptsConfig() PromptsConfig {
+	return PromptsConfig{
+		TranslateTargetLanguage: "English",
+		Refine:                  "Please refine, format, and correct the following text, improving grammar, spelling, and readability without adding empty introductory conversational filler. Output only the improved text:\n\n{{.Text}}",
+		Translate:               "Translate to {{.Language}}:\n\n{{.Text}}",
+		Summarize:               "Please generate a concise, bullet-pointed summary of the major key points from the following text:\n\n{{.Text}}",
+		Explain:                 "Please explain the technical concepts or code snippet shown below simply and clearly, using markdown formatting:\n\n{{.Text}}",
+	}
 }
 
 // DefaultOllamaConfig returns a default Ollama configuration
@@ -211,6 +233,7 @@ func Default() *Config {
 		Logging:    DefaultLoggingConfig(),
 		Daemon:     DefaultDaemonConfig(),
 		Terminal:   DefaultTerminalConfig(),
+		Prompts:    DefaultPromptsConfig(),
 	}
 }
 

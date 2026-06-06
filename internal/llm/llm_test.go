@@ -3,10 +3,12 @@ package llm
 import (
 	"strings"
 	"testing"
+
+	"github.com/yourname/clipboard-tui/internal/config"
 )
 
 func TestPromptTemplates(t *testing.T) {
-	reg := NewPromptRegistry()
+	reg := NewPromptRegistry(config.DefaultPromptsConfig())
 
 	// Test template rendering
 	tmpl := reg.Get("refine")
@@ -20,15 +22,38 @@ func TestPromptTemplates(t *testing.T) {
 	if !strings.Contains(rendered, testText) {
 		t.Errorf("rendered prompt should include the source clipboard text, got: %s", rendered)
 	}
+}
 
-	// Test fallback handler 'custom'
-	unknownTmpl := reg.Get("nonexistent_special_template")
-	if unknownTmpl.Name != "custom" {
-		t.Errorf("expected nonexistent template query to fallback to 'custom', got: %s", unknownTmpl.Name)
+func TestPromptTemplates_TranslateRenderWithOptions(t *testing.T) {
+	reg := NewPromptRegistry(config.DefaultPromptsConfig())
+	tmpl := reg.Get("translate")
+
+	rendered := tmpl.RenderWithOptions("Bonjour", map[string]string{"Language": "English"})
+	if !strings.Contains(rendered, "English") {
+		t.Errorf("expected language in rendered translate prompt, got: %s", rendered)
 	}
+	if !strings.Contains(rendered, "Bonjour") {
+		t.Errorf("expected text in rendered translate prompt, got: %s", rendered)
+	}
+}
 
-	renderedCustom := unknownTmpl.Render("free prompt style template")
-	if renderedCustom != "free prompt style template" {
-		t.Errorf("custom template should render original text unmodified, got: %s", renderedCustom)
+func TestPromptTemplates_ConfigOverride(t *testing.T) {
+	cfg := config.DefaultPromptsConfig()
+	cfg.Refine = "Custom refine: {{.Text}}"
+	reg := NewPromptRegistry(cfg)
+
+	rendered := reg.Get("refine").Render("hello")
+	if rendered != "Custom refine: hello" {
+		t.Errorf("expected custom refine prompt, got: %s", rendered)
+	}
+}
+
+func TestPromptTemplates_Fallback(t *testing.T) {
+	reg := NewPromptRegistry(config.DefaultPromptsConfig())
+
+	// Unknown name falls back to passthrough template.
+	tmpl := reg.Get("nonexistent_special_template")
+	if tmpl.Render("passthrough") != "passthrough" {
+		t.Errorf("fallback should render original text unmodified")
 	}
 }

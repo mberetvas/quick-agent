@@ -129,7 +129,7 @@ var testLLMCmd = &cobra.Command{
 		fmt.Println("Healthcheck OK!")
 
 		// 2. Render Prompt
-		registry := llm.NewPromptRegistry()
+		registry := llm.NewPromptRegistry(cfg.Prompts)
 		template := registry.Get(debugLLMTemplate)
 		renderedPrompt := template.Render(inputText)
 

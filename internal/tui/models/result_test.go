@@ -42,7 +42,7 @@ func (m *mockClipboard) Get() (string, error)  { return "", nil }
 func (m *mockClipboard) Set(text string) error { m.setText = text; return nil }
 
 func TestRenderPromptForAction(t *testing.T) {
-	reg := llm.NewPromptRegistry()
+	reg := llm.NewPromptRegistry(config.DefaultPromptsConfig())
 	prompt := reg.Get(string(ActionRefine)).Render("hello")
 	if prompt == "" || !strings.Contains(prompt, "hello") {
 		t.Fatalf("expected prompt containing hello, got %q", prompt)
@@ -53,7 +53,7 @@ func TestResultModel_accumulatesTokens(t *testing.T) {
 	theme := styles.DefaultTheme()
 	keys := resultTestKeyMap()
 	cb := &mockClipboard{}
-	model := *NewResultModel(ActionRefine, "input text", &mockLLM{tokens: []string{"A", "B"}}, llm.NewPromptRegistry(), theme, keys, cb, 0)
+	model := *NewResultModel(ActionRefine, "input text", &mockLLM{tokens: []string{"A", "B"}}, llm.NewPromptRegistry(config.DefaultPromptsConfig()), theme, keys, cb, 0, "")
 
 	cmd := model.Init()
 	if cmd == nil {
@@ -83,7 +83,7 @@ func TestResultModel_copy(t *testing.T) {
 	theme := styles.DefaultTheme()
 	keys := resultTestKeyMap()
 	cb := &mockClipboard{}
-	model := *NewResultModel(ActionRefine, "x", &mockLLM{tokens: []string{"done"}}, llm.NewPromptRegistry(), theme, keys, cb, 0)
+	model := *NewResultModel(ActionRefine, "x", &mockLLM{tokens: []string{"done"}}, llm.NewPromptRegistry(config.DefaultPromptsConfig()), theme, keys, cb, 0, "")
 
 	cmd := model.Init()
 	for i := 0; i < 20; i++ {
@@ -108,7 +108,7 @@ func TestResultModel_copy(t *testing.T) {
 func TestResultModel_back_emitsBackEvent(t *testing.T) {
 	theme := styles.DefaultTheme()
 	keys := resultTestKeyMap()
-	model := *NewResultModel(ActionRefine, "x", &mockLLM{}, llm.NewPromptRegistry(), theme, keys, &mockClipboard{}, 0)
+	model := *NewResultModel(ActionRefine, "x", &mockLLM{}, llm.NewPromptRegistry(config.DefaultPromptsConfig()), theme, keys, &mockClipboard{}, 0, "")
 
 	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEscape})
 	if cmd == nil {

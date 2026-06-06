@@ -105,13 +105,10 @@ A background daemon monitors the system clipboard. When the user presses a confi
 **Responsibility**: Interactive terminal UI built with bubbletea.
 
 **Views**:
-- **Initial View**: Displays clipboard text + action list (Refine, Translate, Summarize, Explain, Custom)
+- **Initial View**: Displays clipboard text + action list (Refine, Translate, Summarize, Explain)
 - **Options View**: Action selection menu
-- **Language Picker**: For translate action (common languages + custom input)
-- **Custom Prompt**: Free-text input for custom LLM prompts
 - **Result View**: Streaming response display with Copy button
-- **Error View**: User-friendly error messages with action buttons
-- **Setup View**: First-run configuration flow
+- **Error View**: User-friendly display-only error message with keybindings to retry or go back
 
 **Keybindings**:
 - `j` / `↓` / `k` / `↑`: Navigate
@@ -119,12 +116,13 @@ A background daemon monitors the system clipboard. When the user presses a confi
 - `Esc` / `q`: Back / Quit
 - `c`: Copy result to clipboard
 - `Ctrl+C`: Copy result (standard)
+- `r`: Retry generation inside Error View
 
 **Features**:
 - Token-by-token streaming with 50ms delay (typewriter effect)
 - Full response buffering for Copy functionality
 - View stack for back navigation
-- Theming: dark, light, auto-detect
+- Theming: dark, light (configured via `tui.theme` config field)
 
 ### 3. LLM Clients (`internal/llm/`)
 
@@ -226,16 +224,10 @@ type LLMClient interface {
 ### User Error Structure
 ```go
 type UserError struct {
-    Title      string   // "Connection Failed"
-    Message    string   // "Could not connect to Ollama at http://localhost:11434"
-    Actions    []Action // Buttons: {Text: "Start Ollama", Command: "ollama serve"}
-    Severity   string   // "error" | "warning" | "info"
-    LogDetails string   // Full technical details for logs
-}
-
-type Action struct {
-    Text    string // Button display text
-    Command string // CLI command or internal action
+    Title      string // "Connection Failed"
+    Message    string // "Could not connect to Ollama at http://localhost:11434"
+    Severity   string // "error" | "warning" | "info"
+    Err        error  // Internal error details for logging
 }
 ```
 

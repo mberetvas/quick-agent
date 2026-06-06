@@ -16,7 +16,6 @@ const (
 	ActionTranslate ActionID = "translate"
 	ActionSummarize ActionID = "summarize"
 	ActionExplain   ActionID = "explain"
-	ActionCustom    ActionID = "custom"
 )
 
 // Action is one selectable option in the options menu.
@@ -31,7 +30,6 @@ var DefaultActions = []Action{
 	{ID: ActionTranslate, Label: "Translate"},
 	{ID: ActionSummarize, Label: "Summarize"},
 	{ID: ActionExplain, Label: "Explain"},
-	{ID: ActionCustom, Label: "Custom Prompt"},
 }
 
 // OptionsModel renders the action selection menu.
@@ -75,28 +73,12 @@ func (m OptionsModel) Update(msg tea.Msg) (OptionsModel, tea.Cmd) {
 			}
 		case m.keys.Match("select", key):
 			action := m.actions[m.cursor].ID
-			switch action {
-			case ActionTranslate, ActionCustom:
-				return m, func() tea.Msg { return ShowViewEvent{View: targetViewForAction(action)} }
-			default:
-				return m, func() tea.Msg { return ActionSelectedEvent{Action: action} }
-			}
+			return m, func() tea.Msg { return ActionSelectedEvent{Action: action} }
 		case m.keys.Match("back", key):
 			return m, func() tea.Msg { return BackEvent{} }
 		}
 	}
 	return m, nil
-}
-
-func targetViewForAction(id ActionID) string {
-	switch id {
-	case ActionTranslate:
-		return ViewNameLanguagePicker
-	case ActionCustom:
-		return ViewNameCustomPrompt
-	default:
-		return ViewNameResult
-	}
 }
 
 func (m OptionsModel) View() string {

@@ -1,9 +1,7 @@
 package tui
 
 import (
-	"fmt"
-
-	"github.com/charmbracelet/bubbletea"
+	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/yourname/clipboard-tui/internal/clipboard"
 	"github.com/yourname/clipboard-tui/internal/config"
@@ -20,9 +18,6 @@ const (
 	ViewOptions
 	ViewResult
 	ViewError
-	ViewSetup
-	ViewLanguagePicker
-	ViewCustomPrompt
 )
 
 // Model is the root bubbletea model managing the view stack.
@@ -41,6 +36,7 @@ type Model struct {
 	InitialModel *models.InitialModel
 	OptionsModel *models.OptionsModel
 	ResultModel  *models.ResultModel
+	ErrorModel   *models.ErrorModel
 
 	width  int
 	height int
@@ -51,9 +47,9 @@ func NewModel(clipboardText string, cfg *config.Config, client llm.LLMClient) *M
 	if cfg == nil {
 		cfg = config.Default()
 	}
-	theme := styles.DefaultTheme()
+	theme := styles.ThemeForConfig(cfg.TUI.Theme)
 	keys := models.NewKeyMap(cfg.TUI)
-	prompts := llm.NewPromptRegistry()
+	prompts := llm.NewPromptRegistry(cfg.Prompts)
 
 	return &Model{
 		currentView:   ViewInitial,
@@ -108,6 +104,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case models.ActionSelectedEvent:
+		language := msg.Language
+		if msg.Action == models.ActionTranslate && language == "" {
+			language = m.cfg.Prompts.TranslateTargetLanguage
+		}
 		m.ResultModel = models.NewResultModel(
 			msg.Action,
 			m.clipboardText,
@@ -117,6 +117,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.keys,
 			m.cb,
 			m.cfg.TUI.StreamingDelayMS,
+			language,
 		)
 		m.PushView(ViewResult)
 		return m, m.ResultModel.Init()
@@ -126,12 +127,24 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.PushView(v)
 		}
 		return m, nil
+
+	case models.ShowErrorEvent:
+		m.ErrorModel = models.NewErrorModel(msg.Err, m.theme, m.keys)
+		m.PushView(ViewError)
+		return m, nil
+
+	case models.RetryEvent:
+		m.PopView() // back to ViewResult
+		if m.ResultModel != nil {
+			return m, m.ResultModel.Retry()
+		}
+		return m, nil
 	}
 
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		if m.keys.Match("back", keyMsg.String()) {
 			switch m.currentView {
-			case ViewResult, ViewLanguagePicker, ViewCustomPrompt:
+			case ViewResult:
 				m.PopView()
 				return m, nil
 			}
@@ -154,6 +167,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			newResult, cmd = m.ResultModel.Update(msg)
 			m.ResultModel = &newResult
 		}
+	case ViewError:
+		if m.ErrorModel != nil {
+			var newErr models.ErrorModel
+			newErr, cmd = m.ErrorModel.Update(msg)
+			m.ErrorModel = &newErr
+		}
 	}
 
 	return m, cmd
@@ -163,10 +182,6 @@ func viewFromName(name string) (ViewType, bool) {
 	switch name {
 	case models.ViewNameResult:
 		return ViewResult, true
-	case models.ViewNameLanguagePicker:
-		return ViewLanguagePicker, true
-	case models.ViewNameCustomPrompt:
-		return ViewCustomPrompt, true
 	default:
 		return ViewInitial, false
 	}
@@ -183,20 +198,12 @@ func (m *Model) View() string {
 			return m.ResultModel.View()
 		}
 		return "Loading..."
-	case ViewLanguagePicker:
-		return m.stubView("Language picker")
-	case ViewCustomPrompt:
-		return m.stubView("Custom prompt")
+	case ViewError:
+		if m.ErrorModel != nil {
+			return m.ErrorModel.View()
+		}
+		return "Error"
 	default:
 		return "View not implemented yet."
 	}
-}
-
-func (m *Model) stubView(title string) string {
-	return fmt.Sprintf(
-		"%s\n\n%s\n\n%s",
-		m.theme.Header.Render(title+" (coming soon)"),
-		m.theme.NormalText.Render("This view is stubbed until a later slice."),
-		m.theme.Footer.Render("esc/q: back"),
-	)
 }

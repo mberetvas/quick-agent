@@ -160,9 +160,12 @@ func TestOptions_view_lists_all_actions(t *testing.T) {
 	m.PushView(ViewOptions)
 
 	view := m.View()
-	for _, label := range []string{"Refine", "Translate", "Summarize", "Explain", "Custom Prompt"} {
+	for _, label := range []string{"Refine", "Translate", "Summarize", "Explain"} {
 		if !strings.Contains(view, label) {
 			t.Errorf("options view missing %q", label)
 		}
+	}
+	if strings.Contains(view, "Custom Prompt") {
+		t.Error("options view should not list Custom Prompt")
 	}
 }

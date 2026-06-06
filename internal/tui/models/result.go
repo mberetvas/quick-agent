@@ -9,6 +9,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/yourname/clipboard-tui/internal/clipboard"
+	"github.com/yourname/clipboard-tui/internal/config"
+	apperrors "github.com/yourname/clipboard-tui/internal/errors"
 	"github.com/yourname/clipboard-tui/internal/llm"
 	"github.com/yourname/clipboard-tui/internal/tui/styles"
 )
@@ -36,6 +38,7 @@ type flushDisplayMsg struct{}
 type ResultModel struct {
 	action        ActionID
 	clipboardText string
+	language      string
 	result        string
 	pending       string
 	streaming     bool
@@ -63,9 +66,10 @@ func NewResultModel(
 	keys KeyMap,
 	cb clipboard.Clipboard,
 	streamingDelayMS int,
+	language string,
 ) *ResultModel {
 	if prompts == nil {
-		prompts = llm.NewPromptRegistry()
+		prompts = llm.NewPromptRegistry(config.DefaultPromptsConfig())
 	}
 	if cb == nil {
 		cb = clipboard.SystemClipboard{}
@@ -73,6 +77,7 @@ func NewResultModel(
 	return &ResultModel{
 		action:         action,
 		clipboardText:  clipboardText,
+		language:       language,
 		llmClient:      client,
 		prompts:        prompts,
 		theme:          theme,
@@ -91,13 +96,31 @@ func (m ResultModel) startGenerateCmd() tea.Cmd {
 		if m.llmClient == nil {
 			return streamErrMsg{err: fmt.Errorf("LLM client not configured")}
 		}
-		prompt := m.prompts.Get(string(m.action)).Render(m.clipboardText)
+		tmpl := m.prompts.Get(string(m.action))
+		var prompt string
+		if m.action == ActionTranslate && m.language != "" {
+			prompt = tmpl.RenderWithOptions(m.clipboardText, map[string]string{"Language": m.language})
+		} else {
+			prompt = tmpl.Render(m.clipboardText)
+		}
 		tokens, errs, err := m.llmClient.Generate(context.Background(), prompt)
 		if err != nil {
 			return streamErrMsg{err: err}
 		}
 		return streamStartedMsg{tokens: tokens, errs: errs}
 	}
+}
+
+// Retry resets streaming state and re-runs the generation command.
+func (m *ResultModel) Retry() tea.Cmd {
+	m.result = ""
+	m.pending = ""
+	m.streaming = false
+	m.streamErr = nil
+	m.tokens = nil
+	m.errs = nil
+	m.copied = false
+	return m.startGenerateCmd()
 }
 
 func (m ResultModel) readNextTokenCmd() tea.Cmd {
@@ -183,10 +206,10 @@ func (m ResultModel) Update(msg tea.Msg) (ResultModel, tea.Cmd) {
 
 	case streamErrMsg:
 		m.streaming = false
-		m.streamErr = msg.err
 		m.tokens = nil
 		m.errs = nil
-		return m, nil
+		userErr := classifyStreamError(msg.err)
+		return m, func() tea.Msg { return ShowErrorEvent{Err: userErr} }
 
 	case copiedMsg:
 		m.copied = false
@@ -204,8 +227,13 @@ func (m ResultModel) Update(msg tea.Msg) (ResultModel, tea.Cmd) {
 				return m, nil
 			}
 			if err := m.cb.Set(text); err != nil {
-				m.streamErr = err
-				return m, nil
+				userErr := apperrors.UserError{
+					Title:    "Copy Failed",
+					Message:  err.Error(),
+					Severity: apperrors.SeverityError,
+					Err:      err,
+				}
+				return m, func() tea.Msg { return ShowErrorEvent{Err: userErr} }
 			}
 			m.copied = true
 			return m, tea.Tick(800*time.Millisecond, func(time.Time) tea.Msg { return copiedMsg{} })
@@ -223,15 +251,8 @@ func (m ResultModel) View() string {
 	title := actionTitle(m.action)
 	sb.WriteString(m.theme.Header.Render(title) + "\n\n")
 
-	if m.streamErr != nil {
-		errStyle := lipgloss.NewStyle().Foreground(m.theme.Error)
-		sb.WriteString(errStyle.Render("Error: "+m.streamErr.Error()) + "\n\n")
-	}
-
 	body := m.result
-	if m.streaming && m.pending != "" && m.streamingDelay <= 0 {
-		body += m.pending
-	} else if m.streaming && m.pending != "" {
+	if m.streaming && m.pending != "" {
 		body += m.pending
 	}
 	if body == "" && m.streaming {
@@ -271,9 +292,30 @@ func actionTitle(id ActionID) string {
 		return "Explain"
 	case ActionTranslate:
 		return "Translate"
-	case ActionCustom:
-		return "Custom"
 	default:
 		return string(id)
+	}
+}
+
+// classifyStreamError maps a raw error to a structured UserError.
+func classifyStreamError(err error) apperrors.UserError {
+	if err == nil {
+		return apperrors.UserError{Title: "Unknown Error", Message: "An unknown error occurred.", Severity: apperrors.SeverityError}
+	}
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "deadline exceeded") || strings.Contains(msg, "timeout") || strings.Contains(msg, "context deadline"):
+		return apperrors.ErrLLMTimeout()
+	case strings.Contains(msg, "connection refused") || strings.Contains(msg, "no such host") || strings.Contains(msg, "dial "):
+		return apperrors.ErrLLMConnection("backend", "", err)
+	case strings.Contains(msg, "401") || strings.Contains(msg, "unauthorized") || strings.Contains(msg, "invalid api key"):
+		return apperrors.ErrInvalidAPIKey()
+	default:
+		return apperrors.UserError{
+			Title:    "Generation Failed",
+			Message:  msg,
+			Severity: apperrors.SeverityError,
+			Err:      err,
+		}
 	}
 }

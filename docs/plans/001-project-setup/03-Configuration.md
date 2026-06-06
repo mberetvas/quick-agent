@@ -69,6 +69,14 @@
   "terminal": {
     "emulator": "auto",
     "fallback_dir": ""
+  },
+
+  "prompts": {
+    "translate_target_language": "English",
+    "refine": "",
+    "translate": "",
+    "summarize": "",
+    "explain": ""
   }
 }
 ```
@@ -102,6 +110,7 @@ type Config struct {
     Logging LoggingConfig `json:"logging"`
     Daemon DaemonConfig `json:"daemon"`
     Terminal TerminalConfig `json:"terminal"`
+    Prompts  PromptsConfig  `json:"prompts"`
 }
 
 func Default() *Config {
@@ -117,6 +126,7 @@ func Default() *Config {
         Logging: DefaultLoggingConfig(),
         Daemon: DefaultDaemonConfig(),
         Terminal: DefaultTerminalConfig(),
+        Prompts:  DefaultPromptsConfig(),
     }
 }
 
@@ -297,6 +307,24 @@ func DefaultTerminalConfig() TerminalConfig {
     return TerminalConfig{
         Emulator:    "auto",
         FallbackDir: filepath.Join(GetConfigDir(), "output"),
+    }
+}
+
+type PromptsConfig struct {
+    TranslateTargetLanguage string `json:"translate_target_language"`
+    Refine                  string `json:"refine"`
+    Translate               string `json:"translate"`
+    Summarize               string `json:"summarize"`
+    Explain                 string `json:"explain"`
+}
+
+func DefaultPromptsConfig() PromptsConfig {
+    return PromptsConfig{
+        TranslateTargetLanguage: "English",
+        Refine:                  "",
+        Translate:               "",
+        Summarize:               "",
+        Explain:                 "",
     }
 }
 ```

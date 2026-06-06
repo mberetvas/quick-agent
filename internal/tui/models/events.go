@@ -1,5 +1,7 @@
 package models
 
+import apperrors "github.com/yourname/clipboard-tui/internal/errors"
+
 // ShowOptionsEvent requests navigation to the options menu.
 type ShowOptionsEvent struct{}
 
@@ -12,13 +14,21 @@ type ShowViewEvent struct {
 }
 
 // ActionSelectedEvent requests the result view for an LLM action.
+// Language is populated by app.go for the Translate action.
 type ActionSelectedEvent struct {
-	Action ActionID
+	Action   ActionID
+	Language string
 }
+
+// ShowErrorEvent requests navigation to the error view.
+type ShowErrorEvent struct {
+	Err apperrors.UserError
+}
+
+// RetryEvent requests a retry of the last LLM generation.
+type RetryEvent struct{}
 
 // View name constants used with ShowViewEvent.
 const (
-	ViewNameResult         = "result"
-	ViewNameLanguagePicker = "language_picker"
-	ViewNameCustomPrompt   = "custom_prompt"
+	ViewNameResult = "result"
 )

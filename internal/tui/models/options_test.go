@@ -58,17 +58,14 @@ func TestOptionsModel_Update_Back(t *testing.T) {
 
 func TestOptionsModel_Update_Select(t *testing.T) {
 	tests := []struct {
-		name         string
-		cursor       int
-		wantAction   ActionID
-		wantView     string
-		wantViewEv   bool
+		name       string
+		cursor     int
+		wantAction ActionID
 	}{
 		{name: "refine", cursor: 0, wantAction: ActionRefine},
-		{name: "translate", cursor: 1, wantView: ViewNameLanguagePicker, wantViewEv: true},
+		{name: "translate", cursor: 1, wantAction: ActionTranslate},
 		{name: "summarize", cursor: 2, wantAction: ActionSummarize},
 		{name: "explain", cursor: 3, wantAction: ActionExplain},
-		{name: "custom", cursor: 4, wantView: ViewNameCustomPrompt, wantViewEv: true},
 	}
 
 	for _, tt := range tests {
@@ -78,22 +75,11 @@ func TestOptionsModel_Update_Select(t *testing.T) {
 
 			_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 			if cmd == nil {
-				t.Fatal("expected navigation command")
+				t.Fatal("expected ActionSelectedEvent command")
 			}
-			msg := cmd()
-			if tt.wantViewEv {
-				ev, ok := msg.(ShowViewEvent)
-				if !ok {
-					t.Fatalf("expected ShowViewEvent, got %T", msg)
-				}
-				if ev.View != tt.wantView {
-					t.Errorf("expected view %q, got %q", tt.wantView, ev.View)
-				}
-				return
-			}
-			ev, ok := msg.(ActionSelectedEvent)
+			ev, ok := cmd().(ActionSelectedEvent)
 			if !ok {
-				t.Fatalf("expected ActionSelectedEvent, got %T", msg)
+				t.Fatalf("expected ActionSelectedEvent, got %T", cmd())
 			}
 			if ev.Action != tt.wantAction {
 				t.Errorf("expected action %q, got %q", tt.wantAction, ev.Action)
@@ -113,21 +99,12 @@ func TestOptionsModel_View_highlight(t *testing.T) {
 	if strings.Contains(view, "> 1. Refine") {
 		t.Error("Refine should not be highlighted")
 	}
-	for _, label := range []string{"Refine", "Translate", "Summarize", "Explain", "Custom Prompt"} {
+	for _, label := range []string{"Refine", "Translate", "Summarize", "Explain"} {
 		if !strings.Contains(view, label) {
 			t.Errorf("expected label %q in view", label)
 		}
 	}
-}
-
-func TestTargetViewForAction(t *testing.T) {
-	if got := targetViewForAction(ActionTranslate); got != ViewNameLanguagePicker {
-		t.Errorf("translate: got %q", got)
-	}
-	if got := targetViewForAction(ActionCustom); got != ViewNameCustomPrompt {
-		t.Errorf("custom: got %q", got)
-	}
-	if got := targetViewForAction(ActionRefine); got != ViewNameResult {
-		t.Errorf("refine: got %q", got)
+	if strings.Contains(view, "Custom Prompt") {
+		t.Error("Custom Prompt should not appear in options view")
 	}
 }
