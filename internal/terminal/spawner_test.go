@@ -43,6 +43,9 @@ func mockLookPathPreferLastProfile(t *testing.T) mockLookPathState {
 		if name == lastBin {
 			return "/mock/" + name, nil
 		}
+		if name == "open" {
+			return "/usr/bin/open", nil
+		}
 		return "", errors.New("missing")
 	}
 	return mockLookPathState{fn: fn, wantID: want}
