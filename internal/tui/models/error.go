@@ -5,8 +5,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	apperrors "github.com/yourname/clipboard-tui/internal/errors"
-	"github.com/yourname/clipboard-tui/internal/tui/styles"
+	apperrors "github.com/mberetvas/quick-agent/internal/errors"
+	"github.com/mberetvas/quick-agent/internal/tui/styles"
 )
 
 // ErrorModel renders a structured error with severity-appropriate styling.

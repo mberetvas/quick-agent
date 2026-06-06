@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/yourname/clipboard-tui/internal/config"
+	"github.com/mberetvas/quick-agent/internal/config"
 )
 
 func TestNewClientFromConfig(t *testing.T) {

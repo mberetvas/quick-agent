@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh — Install or uninstall clipboard-tui as a background service.
+# install.sh — Install or uninstall quick-agent as a background service.
 #
 # Usage:
 #   ./install.sh             Install the service
@@ -7,10 +7,10 @@
 
 set -euo pipefail
 
-BINARY_NAME="clipboard-tui"
-SERVICE_NAME="clipboard-tui"
+BINARY_NAME="quick-agent"
+SERVICE_NAME="quick-agent"
 INSTALL_DIR="${HOME}/.local/bin"
-BINARY_SRC="$(cd "$(dirname "$0")/.." && pwd)/clipboard-tui"
+BINARY_SRC="$(cd "$(dirname "$0")/.." && pwd)/quick-agent"
 
 # ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -53,7 +53,7 @@ install() {
     # Try building it
     info "Binary not found at ${BINARY_SRC}; attempting build..."
     pushd "$(dirname "${BINARY_SRC}")" > /dev/null
-    go build -o "${BINARY_SRC}" ./cmd/clipboard-tui/ || die "Build failed. Run 'go build ./cmd/clipboard-tui/' first."
+    go build -o "${BINARY_SRC}" ./cmd/quick-agent/ || die "Build failed. Run 'go build ./cmd/quick-agent/' first."
     popd > /dev/null
   fi
 
@@ -76,7 +76,7 @@ _install_systemd() {
   mkdir -p "${UNIT_DIR}"
   cat > "${UNIT_DIR}/${SERVICE_NAME}.service" <<EOF
 [Unit]
-Description=clipboard-tui background daemon
+Description=quick-agent background daemon
 After=graphical-session.target
 
 [Service]
@@ -114,9 +114,9 @@ _install_launchd() {
     <key>KeepAlive</key>
     <true/>
     <key>StandardErrorPath</key>
-    <string>${HOME}/.config/clipboard-tui/launchd.log</string>
+    <string>${HOME}/.config/quick-agent/launchd.log</string>
     <key>StandardOutPath</key>
-    <string>${HOME}/.config/clipboard-tui/launchd.log</string>
+    <string>${HOME}/.config/quick-agent/launchd.log</string>
 </dict>
 </plist>
 EOF

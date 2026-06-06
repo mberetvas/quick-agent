@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/yourname/clipboard-tui/internal/config"
+	"github.com/mberetvas/quick-agent/internal/config"
 )
 
 // LLMClient defines the unified interface for interacting with LLM backends.

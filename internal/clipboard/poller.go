@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yourname/clipboard-tui/internal/config"
+	"github.com/mberetvas/quick-agent/internal/config"
 )
 
 // Poller polls the clipboard periodically and emits sanitized changes on a channel.

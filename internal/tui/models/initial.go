@@ -6,7 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/yourname/clipboard-tui/internal/tui/styles"
+	"github.com/mberetvas/quick-agent/internal/tui/styles"
 )
 
 // InitialModel shows the clipboard text and a path into the options menu.

@@ -19,8 +19,8 @@ func TestUserError_Error(t *testing.T) {
 
 func TestFactories(t *testing.T) {
 	tests := []struct {
-		name     string
-		err      UserError
+		name      string
+		err       UserError
 		wantTitle string
 	}{
 		{"timeout", ErrLLMTimeout(), "Request Timed Out"},

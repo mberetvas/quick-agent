@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/yourname/clipboard-tui/internal/config"
-	"github.com/yourname/clipboard-tui/internal/llm/retry"
+	"github.com/mberetvas/quick-agent/internal/config"
+	"github.com/mberetvas/quick-agent/internal/llm/retry"
 )
 
 // OllamaClient implements the llm.LLMClient interface for the local Ollama API.

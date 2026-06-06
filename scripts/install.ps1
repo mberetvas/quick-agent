@@ -1,4 +1,4 @@
-# install.ps1 — Install or uninstall clipboard-tui as a Windows Scheduled Task.
+# install.ps1 — Install or uninstall quick-agent as a Windows Scheduled Task.
 #
 # Usage:
 #   .\install.ps1             Install the service (runs at logon)
@@ -12,9 +12,9 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$TaskName   = 'clipboard-tui'
-$BinaryName = 'clipboard-tui.exe'
-$InstallDir = Join-Path $env:LOCALAPPDATA 'clipboard-tui'
+$TaskName   = 'quick-agent'
+$BinaryName = 'quick-agent.exe'
+$InstallDir = Join-Path $env:LOCALAPPDATA 'quick-agent'
 $ScriptRoot = Split-Path -Parent $PSScriptRoot
 $BinarySrc  = Join-Path $ScriptRoot $BinaryName
 
@@ -48,8 +48,8 @@ function Install-Service {
         Write-Info "Binary not found at $BinarySrc; attempting build..."
         Push-Location $ScriptRoot
         try {
-            go build -o $BinarySrc .\cmd\clipboard-tui\
-            if ($LASTEXITCODE -ne 0) { Write-Err "Build failed. Run 'go build .\cmd\clipboard-tui\' first." }
+            go build -o $BinarySrc .\cmd\quick-agent\
+            if ($LASTEXITCODE -ne 0) { Write-Err "Build failed. Run 'go build .\cmd\quick-agent\' first." }
         } finally {
             Pop-Location
         }

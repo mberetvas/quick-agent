@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	apperrors "github.com/yourname/clipboard-tui/internal/errors"
-	"github.com/yourname/clipboard-tui/internal/tui/styles"
+	apperrors "github.com/mberetvas/quick-agent/internal/errors"
+	"github.com/mberetvas/quick-agent/internal/tui/styles"
 )
 
 func TestErrorModel_keys(t *testing.T) {

@@ -6,9 +6,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/mberetvas/quick-agent/internal/config"
+	"github.com/mberetvas/quick-agent/internal/daemon"
 	"github.com/spf13/cobra"
-	"github.com/yourname/clipboard-tui/internal/config"
-	"github.com/yourname/clipboard-tui/internal/daemon"
 )
 
 var daemonStop bool

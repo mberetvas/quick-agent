@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yourname/clipboard-tui/internal/config"
+	"github.com/mberetvas/quick-agent/internal/config"
 )
 
 func TestOllamaHealthCheck(t *testing.T) {

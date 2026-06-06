@@ -117,7 +117,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y gcc libx11-dev libxtst-dev
 
       - name: Build CLI with gohook
-        run: go build -o /dev/null ./cmd/clipboard-tui
+        run: go build -o /dev/null ./cmd/quick-agent
 
   debug-on-failure:
     name: Debug environment

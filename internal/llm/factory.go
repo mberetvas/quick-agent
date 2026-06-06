@@ -3,9 +3,9 @@ package llm
 import (
 	"fmt"
 
-	"github.com/yourname/clipboard-tui/internal/config"
-	"github.com/yourname/clipboard-tui/internal/llm/ollama"
-	"github.com/yourname/clipboard-tui/internal/llm/openrouter"
+	"github.com/mberetvas/quick-agent/internal/config"
+	"github.com/mberetvas/quick-agent/internal/llm/ollama"
+	"github.com/mberetvas/quick-agent/internal/llm/openrouter"
 )
 
 // NewClientFromConfig returns an LLM client for the configured backend.

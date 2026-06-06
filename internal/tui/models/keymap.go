@@ -1,6 +1,6 @@
 package models
 
-import "github.com/yourname/clipboard-tui/internal/config"
+import "github.com/mberetvas/quick-agent/internal/config"
 
 // KeyMap resolves configured TUI keybindings.
 type KeyMap struct {

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yourname/clipboard-tui/internal/config"
+	"github.com/mberetvas/quick-agent/internal/config"
 )
 
 func TestDoHTTP_retries_on_503(t *testing.T) {

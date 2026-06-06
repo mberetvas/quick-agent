@@ -8,9 +8,9 @@ import (
 	"github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
-	"github.com/yourname/clipboard-tui/internal/config"
-	"github.com/yourname/clipboard-tui/internal/llm"
-	"github.com/yourname/clipboard-tui/internal/tui"
+	"github.com/mberetvas/quick-agent/internal/config"
+	"github.com/mberetvas/quick-agent/internal/llm"
+	"github.com/mberetvas/quick-agent/internal/tui"
 )
 
 var (

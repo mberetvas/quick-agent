@@ -1,4 +1,4 @@
-module github.com/yourname/clipboard-tui
+module github.com/mberetvas/quick-agent
 
 go 1.25.0
 

@@ -1,6 +1,6 @@
 package models
 
-import apperrors "github.com/yourname/clipboard-tui/internal/errors"
+import apperrors "github.com/mberetvas/quick-agent/internal/errors"
 
 // ShowOptionsEvent requests navigation to the options menu.
 type ShowOptionsEvent struct{}

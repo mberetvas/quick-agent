@@ -8,11 +8,11 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/yourname/clipboard-tui/internal/clipboard"
-	"github.com/yourname/clipboard-tui/internal/config"
-	apperrors "github.com/yourname/clipboard-tui/internal/errors"
-	"github.com/yourname/clipboard-tui/internal/llm"
-	"github.com/yourname/clipboard-tui/internal/tui/styles"
+	"github.com/mberetvas/quick-agent/internal/clipboard"
+	"github.com/mberetvas/quick-agent/internal/config"
+	apperrors "github.com/mberetvas/quick-agent/internal/errors"
+	"github.com/mberetvas/quick-agent/internal/llm"
+	"github.com/mberetvas/quick-agent/internal/tui/styles"
 )
 
 type tokenMsg struct {

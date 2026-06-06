@@ -3,11 +3,11 @@ package tui
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/yourname/clipboard-tui/internal/clipboard"
-	"github.com/yourname/clipboard-tui/internal/config"
-	"github.com/yourname/clipboard-tui/internal/llm"
-	"github.com/yourname/clipboard-tui/internal/tui/models"
-	"github.com/yourname/clipboard-tui/internal/tui/styles"
+	"github.com/mberetvas/quick-agent/internal/clipboard"
+	"github.com/mberetvas/quick-agent/internal/config"
+	"github.com/mberetvas/quick-agent/internal/llm"
+	"github.com/mberetvas/quick-agent/internal/tui/models"
+	"github.com/mberetvas/quick-agent/internal/tui/styles"
 )
 
 // ViewType represents different screens/views in the application.

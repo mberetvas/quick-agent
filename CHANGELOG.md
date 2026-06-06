@@ -8,4 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Initial release infrastructure: build scripts, GitHub Actions release workflow, and `clipboard-tui version`.
+- Initial release infrastructure: build scripts, GitHub Actions release workflow, and `quick-agent version`.
+- Project rename from `clipboard-tui` to `quick-agent`; module path `github.com/mberetvas/quick-agent`.
+- README, expanded unit tests, and local `just cover-check` coverage gate (≥ 80%).

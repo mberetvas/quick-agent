@@ -1,5 +1,5 @@
 // Package config defines the configuration structs and methods for loading, validation,
-// and schema migration for the clipboard-tui application.
+// and schema migration for the quick-agent application.
 package config
 
 import (
@@ -188,10 +188,10 @@ func DefaultLoggingConfig() LoggingConfig {
 	if home == "" && runtime.GOOS == "windows" {
 		home = os.Getenv("USERPROFILE")
 	}
-	configDir := filepath.Join(home, ".config", "clipboard-tui")
+	configDir := filepath.Join(home, ".config", "quick-agent")
 	return LoggingConfig{
 		Level:      "info",
-		File:       filepath.Join(configDir, "clipboard-tui.log"),
+		File:       filepath.Join(configDir, "quick-agent.log"),
 		MaxSizeMB:  10,
 		MaxBackups: 5,
 		Console:    false,
@@ -212,7 +212,7 @@ func DefaultDaemonConfig() DaemonConfig {
 	if home == "" && runtime.GOOS == "windows" {
 		home = os.Getenv("USERPROFILE")
 	}
-	configDir := filepath.Join(home, ".config", "clipboard-tui")
+	configDir := filepath.Join(home, ".config", "quick-agent")
 	return DaemonConfig{
 		PIDFile:   filepath.Join(configDir, "daemon.pid"),
 		AutoStart: true,
@@ -242,12 +242,12 @@ func GetConfigDir() string {
 	if runtime.GOOS == "windows" {
 		appdata := os.Getenv("APPDATA")
 		if appdata != "" {
-			return filepath.Join(appdata, "clipboard-tui")
+			return filepath.Join(appdata, "quick-agent")
 		}
 		// Fallback
-		return filepath.Join(os.Getenv("USERPROFILE"), ".config", "clipboard-tui")
+		return filepath.Join(os.Getenv("USERPROFILE"), ".config", "quick-agent")
 	}
-	return filepath.Join(os.Getenv("HOME"), ".config", "clipboard-tui")
+	return filepath.Join(os.Getenv("HOME"), ".config", "quick-agent")
 }
 
 // GetConfigPath returns the default platform-specific path to the config file

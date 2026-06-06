@@ -1,8 +1,8 @@
 # Use the os() function to determine the binary extension [1, 2]
 binary_ext := if os() == "windows" { ".exe" } else { "" }
-BIN_NAME := "clipboard-tui"
+BIN_NAME := "quick-agent"
 BINARY := BIN_NAME + binary_ext
-BIN_PATH := "./cmd/clipboard-tui"
+BIN_PATH := "./cmd/quick-agent"
 
 # Default recipe
 default:
@@ -10,7 +10,7 @@ default:
 
 # Build the binary with the platform-specific extension
 build version="dev":
-    go build -ldflags "-s -w -X github.com/yourname/clipboard-tui/internal/version.Version={{version}}" -o {{BINARY}} {{BIN_PATH}}
+    go build -ldflags "-s -w -X github.com/mberetvas/quick-agent/internal/version.Version={{version}}" -o {{BINARY}} {{BIN_PATH}}
     @echo "✓ Built {{BINARY}}"
 
 # Build all arch binaries for the current OS into dist/
@@ -84,6 +84,11 @@ deps:
 # Build and run the binary using the correct extension
 run-binary: build
     ./{{BINARY}} tui
+
+# Fail if total statement coverage is below 80%
+cover-check min="80":
+    go test -coverprofile=coverage.out ./...
+    @bash -eu -c 'pct=$(go tool cover -func=coverage.out | awk "/^total:/ {gsub(/%/,\"\",\$3); print \$3}"); echo "Total coverage: ${pct}%"; awk "BEGIN {exit !(${pct} >= {{min}})}" || { echo "FAIL: coverage ${pct}% < {{min}}%"; exit 1; }; echo "✓ Coverage gate passed"'
 
 # Full CI pipeline
 ci: deps check build

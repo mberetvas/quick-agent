@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yourname/clipboard-tui/internal/config"
+	"github.com/mberetvas/quick-agent/internal/config"
 )
 
 // MockClipboard is an in-memory mock implementation of Clipboard for unit testing.

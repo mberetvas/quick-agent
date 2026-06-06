@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/yourname/clipboard-tui/internal/tui/styles"
+	"github.com/mberetvas/quick-agent/internal/tui/styles"
 )
 
 // ActionID identifies a prompt action.

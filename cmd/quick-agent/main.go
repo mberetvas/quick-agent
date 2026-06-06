@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mberetvas/quick-agent/internal/version"
 	"github.com/spf13/cobra"
-	"github.com/yourname/clipboard-tui/internal/version"
 )
 
 var (
@@ -14,7 +14,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "clipboard-tui",
+	Use:   "quick-agent",
 	Short: "AI-powered clipboard supercharger",
 }
 

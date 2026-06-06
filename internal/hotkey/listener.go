@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yourname/clipboard-tui/internal/config"
+	"github.com/mberetvas/quick-agent/internal/config"
 )
 
 // KeyDetector is an interface for detecting hotkey presses.
@@ -59,9 +59,9 @@ type Listener struct {
 // NewListener creates a new hotkey listener with the given configuration.
 func NewListener(cfg config.HotkeyConfig) *Listener {
 	return &Listener{
-		cfg:       cfg,
-		active:    false,
-		detector:  defaultDetector,
+		cfg:      cfg,
+		active:   false,
+		detector: defaultDetector,
 	}
 }
 

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/yourname/clipboard-tui/internal/config"
+	"github.com/mberetvas/quick-agent/internal/config"
 )
 
 // DoHTTP executes do up to RetryAttempts times with configured backoff on retryable failures.

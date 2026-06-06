@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/yourname/clipboard-tui/internal/config"
-	"github.com/yourname/clipboard-tui/internal/llm"
-	"github.com/yourname/clipboard-tui/internal/tui/styles"
+	"github.com/mberetvas/quick-agent/internal/config"
+	"github.com/mberetvas/quick-agent/internal/llm"
+	"github.com/mberetvas/quick-agent/internal/tui/styles"
 )
 
 type mockLLM struct {

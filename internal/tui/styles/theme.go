@@ -4,26 +4,26 @@ import "github.com/charmbracelet/lipgloss"
 
 // Theme defines the interface or set of styles used in the TUI application.
 type Theme struct {
-	Primary   lipgloss.Color
-	Secondary lipgloss.Color
-	Border    lipgloss.Color
-	Success   lipgloss.Color
-	Warning   lipgloss.Color
-	Error     lipgloss.Color
+	Primary    lipgloss.Color
+	Secondary  lipgloss.Color
+	Border     lipgloss.Color
+	Success    lipgloss.Color
+	Warning    lipgloss.Color
+	Error      lipgloss.Color
 	NormalText lipgloss.Style
-	Header    lipgloss.Style
-	Footer    lipgloss.Style
-	Title     lipgloss.Style
-	Item      lipgloss.Style
-	Selected  lipgloss.Style
-	InputBox  lipgloss.Style
+	Header     lipgloss.Style
+	Footer     lipgloss.Style
+	Title      lipgloss.Style
+	Item       lipgloss.Style
+	Selected   lipgloss.Style
+	InputBox   lipgloss.Style
 }
 
 // DefaultTheme returns a dark-mode oriented default theme.
 func DefaultTheme() Theme {
-	primary := lipgloss.Color("86")    // Cyan / Teal
-	secondary := lipgloss.Color("205") // Pink / Magenta
-	borderColor := lipgloss.Color("240") // Gray
+	primary := lipgloss.Color("86")       // Cyan / Teal
+	secondary := lipgloss.Color("205")    // Pink / Magenta
+	borderColor := lipgloss.Color("240")  // Gray
 	successColor := lipgloss.Color("46")  // Green
 	warningColor := lipgloss.Color("214") // Yellow / Orange
 	errColor := lipgloss.Color("196")     // Red
@@ -71,9 +71,9 @@ func DefaultTheme() Theme {
 
 // LightTheme returns a light-mode theme with dark text and blue primary.
 func LightTheme() Theme {
-	primary := lipgloss.Color("27")     // Blue
-	secondary := lipgloss.Color("129")  // Purple
-	borderColor := lipgloss.Color("250") // Light gray
+	primary := lipgloss.Color("27")       // Blue
+	secondary := lipgloss.Color("129")    // Purple
+	borderColor := lipgloss.Color("250")  // Light gray
 	successColor := lipgloss.Color("28")  // Dark green
 	warningColor := lipgloss.Color("166") // Orange
 	errColor := lipgloss.Color("160")     // Dark red

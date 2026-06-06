@@ -3,7 +3,7 @@ package models
 import (
 	"testing"
 
-	"github.com/yourname/clipboard-tui/internal/config"
+	"github.com/mberetvas/quick-agent/internal/config"
 )
 
 func TestKeyMap_Match(t *testing.T) {

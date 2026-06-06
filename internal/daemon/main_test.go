@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yourname/clipboard-tui/internal/config"
-	"github.com/yourname/clipboard-tui/internal/terminal"
+	"github.com/mberetvas/quick-agent/internal/config"
+	"github.com/mberetvas/quick-agent/internal/terminal"
 )
 
 type fakePoller struct {

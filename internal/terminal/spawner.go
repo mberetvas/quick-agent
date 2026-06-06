@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/yourname/clipboard-tui/internal/config"
+	"github.com/mberetvas/quick-agent/internal/config"
 )
 
 var (

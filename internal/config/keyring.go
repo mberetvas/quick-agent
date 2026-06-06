@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	ServiceName = "clipboard-tui"
+	ServiceName = "quick-agent"
 )
 
 // kr is the package-level Keyring instance. It can be overridden in tests.

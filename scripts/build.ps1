@@ -1,4 +1,4 @@
-# Build clipboard-tui for the current Windows platform.
+# Build quick-agent for the current Windows platform.
 # Cross-OS builds use GitHub Actions (.github/workflows/release.yml).
 param(
     [string]$Version = "dev",
@@ -7,14 +7,14 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-$Pkg = "./cmd/clipboard-tui"
-$Ldflags = "-s -w -X github.com/yourname/clipboard-tui/internal/version.Version=$Version"
+$Pkg = "./cmd/quick-agent"
+$Ldflags = "-s -w -X github.com/mberetvas/quick-agent/internal/version.Version=$Version"
 
 $Out = Join-Path $Root $OutputDir
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
 
 $Arch = if ([Environment]::Is64BitOperatingSystem) { "amd64" } else { "386" }
-$Name = "clipboard-tui-windows-$Arch.exe"
+$Name = "quick-agent-windows-$Arch.exe"
 $Dest = Join-Path $Out $Name
 
 Write-Host "Building $Name..."

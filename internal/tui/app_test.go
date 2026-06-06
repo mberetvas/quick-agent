@@ -6,8 +6,9 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/yourname/clipboard-tui/internal/config"
-	"github.com/yourname/clipboard-tui/internal/tui/models"
+	"github.com/mberetvas/quick-agent/internal/config"
+	apperrors "github.com/mberetvas/quick-agent/internal/errors"
+	"github.com/mberetvas/quick-agent/internal/tui/models"
 )
 
 type testLLM struct {
@@ -152,6 +153,72 @@ func TestResultView_esc_pops_to_options(t *testing.T) {
 
 	if final.currentView != ViewOptions {
 		t.Errorf("expected options after result back, got %v", final.currentView)
+	}
+}
+
+func TestNewModel_nilConfigUsesDefaults(t *testing.T) {
+	m := NewModel("text", nil, &testLLM{})
+	if m.cfg == nil {
+		t.Fatal("expected default config")
+	}
+	if m.InitialModel == nil || m.OptionsModel == nil {
+		t.Fatal("expected child models")
+	}
+}
+
+func TestModel_Init_delegatesToInitial(t *testing.T) {
+	m := testModel("hello")
+	_ = m.Init() // InitialModel.Init may return nil; ensure no panic
+}
+
+func TestModel_ctrlC_quits(t *testing.T) {
+	m := testModel("hello")
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	if cmd == nil {
+		t.Fatal("expected quit cmd")
+	}
+}
+
+func TestModel_windowSize_updatesDimensions(t *testing.T) {
+	m := testModel("hello")
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+	root := updated.(*Model)
+	if root.width != 120 || root.height != 40 {
+		t.Errorf("size = %dx%d", root.width, root.height)
+	}
+}
+
+func TestModel_showError_pushesErrorView(t *testing.T) {
+	m := testModel("hello")
+	updated, _ := m.Update(models.ShowErrorEvent{Err: apperrors.UserError{
+		Title: "Test", Message: "boom", Severity: apperrors.SeverityError,
+	}})
+	root := updated.(*Model)
+	if root.currentView != ViewError {
+		t.Errorf("view = %v, want ViewError", root.currentView)
+	}
+	if root.ErrorModel == nil {
+		t.Fatal("expected ErrorModel")
+	}
+	if !strings.Contains(root.View(), "boom") {
+		t.Errorf("view = %q", root.View())
+	}
+}
+
+func TestModel_showViewEvent_result(t *testing.T) {
+	m := testModel("hello")
+	updated, _ := m.Update(models.ShowViewEvent{View: models.ViewNameResult})
+	root := updated.(*Model)
+	if root.currentView != ViewResult {
+		t.Errorf("view = %v, want ViewResult", root.currentView)
+	}
+}
+
+func TestModel_view_loadingResult(t *testing.T) {
+	m := testModel("hello")
+	m.PushView(ViewResult)
+	if view := m.View(); view != "Loading..." {
+		t.Errorf("view = %q, want Loading...", view)
 	}
 }
 

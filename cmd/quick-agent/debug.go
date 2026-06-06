@@ -9,12 +9,12 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/mberetvas/quick-agent/internal/clipboard"
+	"github.com/mberetvas/quick-agent/internal/config"
+	"github.com/mberetvas/quick-agent/internal/hotkey"
+	"github.com/mberetvas/quick-agent/internal/llm"
+	"github.com/mberetvas/quick-agent/internal/terminal"
 	"github.com/spf13/cobra"
-	"github.com/yourname/clipboard-tui/internal/clipboard"
-	"github.com/yourname/clipboard-tui/internal/config"
-	"github.com/yourname/clipboard-tui/internal/hotkey"
-	"github.com/yourname/clipboard-tui/internal/llm"
-	"github.com/yourname/clipboard-tui/internal/terminal"
 )
 
 var debugCmd = &cobra.Command{
@@ -223,7 +223,7 @@ var debugHotkeyCmd = &cobra.Command{
 }
 
 var (
-	spawnTerminalCommand string
+	spawnTerminalCommand  string
 	spawnTerminalEmulator string
 )
 

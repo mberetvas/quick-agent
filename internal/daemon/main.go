@@ -7,10 +7,10 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/yourname/clipboard-tui/internal/clipboard"
-	"github.com/yourname/clipboard-tui/internal/config"
-	"github.com/yourname/clipboard-tui/internal/hotkey"
-	"github.com/yourname/clipboard-tui/internal/terminal"
+	"github.com/mberetvas/quick-agent/internal/clipboard"
+	"github.com/mberetvas/quick-agent/internal/config"
+	"github.com/mberetvas/quick-agent/internal/hotkey"
+	"github.com/mberetvas/quick-agent/internal/terminal"
 )
 
 // ClipboardPoller is the subset of clipboard.Poller the daemon loop uses.
