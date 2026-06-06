@@ -28,7 +28,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc libx11-dev libx11-xcb-dev libxtst-dev
+          sudo apt-get install -y gcc libx11-dev libx11-xcb-dev libxtst-dev libxkbcommon-dev libxkbcommon-x11-dev
 
       - name: Vet
         run: go vet ./...
@@ -53,7 +53,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xclip xterm gcc libx11-dev libx11-xcb-dev libxtst-dev
+          sudo apt-get install -y xvfb xclip xterm gcc libx11-dev libx11-xcb-dev libxtst-dev libxkbcommon-dev libxkbcommon-x11-dev
 
       - name: Integration tests
         env:
@@ -81,7 +81,7 @@ jobs:
       - name: Install Linux CGO dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc libx11-dev libx11-xcb-dev libxtst-dev
+          sudo apt-get install -y gcc libx11-dev libx11-xcb-dev libxtst-dev libxkbcommon-dev libxkbcommon-x11-dev
 
       - name: Generate coverage
         run: go test -coverprofile=coverage.out ./...
@@ -106,6 +106,12 @@ jobs:
           go-version: 'stable'
           cache: true
 
+      - name: Install Linux CGO dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc libx11-dev libx11-xcb-dev libxtst-dev libxkbcommon-dev libxkbcommon-x11-dev
+
       - name: Build
         run: go build ./...
 
@@ -125,7 +131,7 @@ jobs:
           cache: true
 
       - name: Install CGO dependencies
-        run: sudo apt-get update && sudo apt-get install -y gcc libx11-dev libx11-xcb-dev libxtst-dev
+        run: sudo apt-get update && sudo apt-get install -y gcc libx11-dev libx11-xcb-dev libxtst-dev libxkbcommon-dev libxkbcommon-x11-dev
 
       - name: Build CLI with gohook
         run: go build -o /dev/null ./cmd/quick-agent
