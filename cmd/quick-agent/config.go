@@ -15,7 +15,11 @@ import (
 
 var configCmd = &cobra.Command{
 	Use:   "config",
-	Short: "Manage configuration",
+	Short: "Manage configuration interactively",
+	Long:  "Run without a subcommand to launch the interactive setup wizard.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runWizard()
+	},
 }
 
 var showCmd = &cobra.Command{

@@ -78,7 +78,7 @@ quick-agent [flags] <command>
 Commands:
   daemon   Start the background clipboard + hotkey daemon
   tui      Launch the terminal UI (stdin or --text)
-  config   Show, validate, and manage configuration / API keys
+  config   Interactive setup wizard and configuration management
   debug    Developer diagnostics (clipboard, hotkey, LLM, terminal)
   version  Print version
 ```
@@ -124,11 +124,14 @@ echo "piped content" | quick-agent tui
 ### Config
 
 ```bash
+quick-agent config                   # interactive setup wizard (recommended for first-time setup)
 quick-agent config show              # resolved config as JSON
 quick-agent config validate          # check config semantics
 quick-agent config set-key openrouter   # store API key in OS keyring (prompt)
 quick-agent config get-key openrouter   # retrieve key (or "not set")
 ```
+
+Running `quick-agent config` launches an interactive wizard where you can choose your LLM backend (Ollama or OpenRouter), configure models and API keys, and set the global hotkey. Settings are saved to `~/.quick-agent/config.json`; API keys are stored in the OS keyring.
 
 ---
 
