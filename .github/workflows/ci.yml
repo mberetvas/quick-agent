@@ -28,12 +28,20 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc libx11-dev libx11-xcb-dev libxtst-dev libxkbcommon-dev libxkbcommon-x11-dev
+          sudo apt-get install -y xvfb gcc libx11-dev libx11-xcb-dev libxtst-dev libxkbcommon-dev libxkbcommon-x11-dev
+
+      - name: Start Xvfb
+        if: runner.os == 'Linux'
+        run: |
+          Xvfb :99 -screen 0 1024x768x16 &
+          sleep 1
 
       - name: Vet
         run: go vet ./...
 
       - name: Unit tests
+        env:
+          DISPLAY: ${{ runner.os == 'Linux' && ':99' || '' }}
         run: go test -v -race -short ./...
 
   integration:
@@ -78,12 +86,9 @@ jobs:
           go-version: 'stable'
           cache: true
 
-      - name: Install Linux CGO dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc libx11-dev libx11-xcb-dev libxtst-dev libxkbcommon-dev libxkbcommon-x11-dev
-
       - name: Generate coverage
+        env:
+          CGO_ENABLED: 0
         run: go test -coverprofile=coverage.out ./...
 
       - name: Coverage summary
