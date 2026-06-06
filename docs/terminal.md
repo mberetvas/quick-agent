@@ -53,7 +53,7 @@ With `"emulator": "auto"`, the first profile in the platform list whose launcher
 ### Debug spawn
 
 ```bash
-go build -o clipboard-tui ./cmd/clipboard-tui
+go build -o quick-agent ./cmd/quick-agent
 
 # Windows (PowerShell)
 .\clipboard-tui debug spawn-terminal --command "echo hello"

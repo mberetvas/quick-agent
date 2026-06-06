@@ -30,6 +30,9 @@ go.work.sum
 # Release artifacts
 /dist/
 /release/
+quick-agent
+quick-agent.exe
+# legacy binary name from before rename
 clipboard-tui
 clipboard-tui.exe
 

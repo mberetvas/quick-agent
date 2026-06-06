@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BINARY="${ROOT}/clipboard-tui"
+BINARY="${ROOT}/quick-agent"
 CONFIG_DIR="$(mktemp -d)"
 export CLIPBOARD_TUI_CONFIG="${CONFIG_DIR}/config.json"
 
@@ -15,7 +15,7 @@ trap cleanup EXIT
 echo "=== End-to-End Tests ==="
 
 echo "Building..."
-(cd "$ROOT" && go build -o "$BINARY" ./cmd/clipboard-tui)
+(cd "$ROOT" && go build -o "$BINARY" ./cmd/quick-agent)
 
 echo "Test 1: config validate (creates default if missing)"
 "$BINARY" config validate

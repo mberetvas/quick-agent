@@ -7,11 +7,11 @@ The daemon and `clipboard-tui debug hotkey` use `internal/hotkey` with [github.c
 ```bash
 # Linux / macOS
 export CGO_ENABLED=1
-go build -o clipboard-tui ./cmd/clipboard-tui
+go build -o quick-agent ./cmd/quick-agent
 
 # Windows (PowerShell) — MinGW-w64 or MSVC required
 $env:CGO_ENABLED = "1"
-go build -o clipboard-tui.exe ./cmd/clipboard-tui
+go build -o quick-agent.exe ./cmd/quick-agent
 ```
 
 ### Platform dependencies

@@ -4,9 +4,9 @@
 // REQUIREMENTS FOR PRODUCTION USE:
 //   - CGO_ENABLED=1 must be set
 //   - A C compiler must be installed:
-//     * Windows: MinGW-w64 or MSVC (via Visual Studio Build Tools)
-//     * Linux: GCC (sudo apt-get install gcc libx11-dev libxtst-dev)
-//     * macOS: Xcode command line tools (xcode-select --install)
+//   - Windows: MinGW-w64 or MSVC (via Visual Studio Build Tools)
+//   - Linux: GCC (sudo apt-get install gcc libx11-dev libxtst-dev)
+//   - macOS: Xcode command line tools (xcode-select --install)
 //
 // Build with: CGO_ENABLED=1 go build
 //

@@ -72,7 +72,7 @@ check: fmt
 
 # Clean build artifacts - rm works on Windows if sh is available [3]
 clean:
-    rm -f {{BINARY}} coverage.out
+    rm -f {{BINARY}} clipboard-tui clipboard-tui.exe coverage.out
     @echo "✓ Cleaned artifacts"
 
 # Install dependencies

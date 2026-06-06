@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Manual test helper for clipboard-tui (see docs/plans/001-project-setup/05-Testing.md).
+# Manual test helper for quick-agent (see docs/plans/001-project-setup/05-Testing.md).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BINARY="${ROOT}/clipboard-tui"
+BINARY="${ROOT}/quick-agent"
 
 echo "=== Manual Test Suite ==="
 echo ""
 
 echo "Building..."
-(cd "$ROOT" && go build -o "$BINARY" ./cmd/clipboard-tui)
+(cd "$ROOT" && go build -o "$BINARY" ./cmd/quick-agent)
 
 echo "Starting daemon..."
 "$BINARY" daemon --log-level=debug &

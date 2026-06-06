@@ -23,7 +23,7 @@ fi
 mkdir -p "$OUTPUT_DIR"
 
 shopt -s nullglob
-for bin in "$DIST"/clipboard-tui-*; do
+for bin in "$DIST"/quick-agent-*; do
   base="$(basename "$bin")"
   stem="${base%.exe}"
   staging="$(mktemp -d)"
