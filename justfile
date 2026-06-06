@@ -17,6 +17,15 @@ build version="dev":
 build-dist version="dev":
     VERSION={{version}} bash ./scripts/build.sh
 
+# Print the current project version
+version:
+    @cat VERSION
+
+# Bump the project version (edit VERSION file)
+bump version:
+    @echo {{version}} > VERSION
+    @echo "✓ Version bumped to {{version}} — commit and push to trigger release"
+
 # Run the TUI
 run:
     go run {{BIN_PATH}} tui
