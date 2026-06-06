@@ -40,6 +40,7 @@ func init() {
 	rootCmd.AddCommand(daemonCmd)
 	rootCmd.AddCommand(tuiCmd)
 	rootCmd.AddCommand(configCmd)
+	rootCmd.AddCommand(refineCmd)
 
 	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "Config file path")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "Log level")

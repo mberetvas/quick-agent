@@ -246,8 +246,8 @@ func TestRunWithRuntime_hotkeyErrorOnShutdown(t *testing.T) {
 		AcquirePID: func(string) (func(), error) {
 			return func() {}, nil
 		},
-		NewPoller: func(context.Context, *config.Config) ClipboardPoller { return newFakePoller("") },
-		NewHotkey: func(config.HotkeyConfig) HotkeyListener { return &errorHotkey{} },
+		NewPoller:  func(context.Context, *config.Config) ClipboardPoller { return newFakePoller("") },
+		NewHotkey:  func(config.HotkeyConfig) HotkeyListener { return &errorHotkey{} },
 		NewSpawner: func(config.TerminalConfig) TUISpawner { return &fakeSpawner{} },
 		Executable: func() (string, error) { return "/bin/clipboard-tui", nil },
 	}
