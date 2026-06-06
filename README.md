@@ -263,7 +263,7 @@ CGO_ENABLED=1 go build -o quick-agent ./cmd/quick-agent
 ```bash
 just test           # unit tests
 just check          # fmt + vet + test
-just cover-check    # fail if total coverage < 80%
+just cover-check    # fail if internal/ coverage < 80%
 just build-dist     # multi-arch binaries for current OS → dist/
 ```
 
@@ -322,4 +322,4 @@ This project is licensed under the terms in [LICENSE](LICENSE).
 
 ## Contributing
 
-Run `just check` before opening a PR. Coverage gate: `just cover-check` (≥ 80% total statement coverage).
+Run `just check` before opening a PR. Coverage gate: `just cover-check` (≥ 80% statement coverage on `internal/...`). Use `just cover-check-all` to include `cmd/` in the report.

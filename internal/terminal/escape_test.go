@@ -82,3 +82,25 @@ func TestBuildDebugInnerCommand_windows(t *testing.T) {
 		t.Errorf("BuildDebugInnerCommand() = %q, want %q", got, want)
 	}
 }
+
+func TestBuildDebugInnerCommand_unix(t *testing.T) {
+	if goos == "windows" {
+		t.Skip("unix only")
+	}
+	got := BuildDebugInnerCommand("echo hello")
+	want := "'echo hello'"
+	if got != "sh -c "+want {
+		t.Errorf("BuildDebugInnerCommand() = %q, want sh -c %q", got, want)
+	}
+}
+
+func TestBuildDebugInnerCommand_unix_singleQuote(t *testing.T) {
+	if goos == "windows" {
+		t.Skip("unix only")
+	}
+	got := BuildDebugInnerCommand("it's fine")
+	want := "sh -c " + QuotePOSIXSingle("it's fine")
+	if got != want {
+		t.Errorf("BuildDebugInnerCommand() = %q, want %q", got, want)
+	}
+}

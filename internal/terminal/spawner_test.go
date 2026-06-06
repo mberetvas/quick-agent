@@ -3,6 +3,7 @@ package terminal
 import (
 	"context"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 
@@ -200,6 +201,99 @@ func TestSpawner_Spawn_returns_error_without_fallback(t *testing.T) {
 	}
 	if errors.Is(err, ErrUsedFallback) {
 		t.Fatal("Spawn must not return ErrUsedFallback")
+	}
+}
+
+func TestSpawner_SpawnTUI_startCmdError_usesFallback(t *testing.T) {
+	state := mockLookPathPreferLastProfile(t)
+	dir := t.TempDir()
+
+	s := NewSpawner(config.TerminalConfig{Emulator: state.wantID, FallbackDir: dir})
+	s.lookPath = state.fn
+	s.startCmd = func(context.Context, string, ...string) error {
+		return errors.New("start failed")
+	}
+	s.opener = func(string) error { return nil }
+
+	err := s.SpawnTUI(context.Background(), "/bin/clipboard-tui", "clip text")
+	if !errors.Is(err, ErrUsedFallback) {
+		t.Fatalf("SpawnTUI() error = %v, want ErrUsedFallback", err)
+	}
+}
+
+func TestSpawner_SpawnTUI_fallbackOpenFails(t *testing.T) {
+	dir := t.TempDir()
+	s := NewSpawner(config.TerminalConfig{Emulator: "nonexistent", FallbackDir: dir})
+	s.lookPath = func(string) (string, error) { return "", errors.New("missing") }
+	s.opener = func(string) error { return errors.New("open failed") }
+
+	err := s.SpawnTUI(context.Background(), "/bin/clipboard-tui", "clip text")
+	if err == nil || !errors.Is(err, ErrUsedFallback) {
+		t.Fatalf("SpawnTUI() error = %v, want ErrUsedFallback", err)
+	}
+	if !strings.Contains(err.Error(), "fallback failed") {
+		t.Errorf("error = %v, want fallback failed detail", err)
+	}
+}
+
+func TestSpawner_SpawnTUI_emptyFallbackDir(t *testing.T) {
+	state := mockLookPathPreferLastProfile(t)
+
+	s := NewSpawner(config.TerminalConfig{Emulator: state.wantID})
+	s.lookPath = func(string) (string, error) { return "", errors.New("missing") }
+	s.opener = func(string) error { return nil }
+
+	err := s.SpawnTUI(context.Background(), "/bin/clipboard-tui", "clip text")
+	if !errors.Is(err, ErrUsedFallback) {
+		t.Fatalf("SpawnTUI() error = %v, want ErrUsedFallback", err)
+	}
+}
+
+func TestProfileByID_notFound(t *testing.T) {
+	_, err := ProfileByID("definitely-not-a-real-profile-id", func(string) (string, error) {
+		return "", errors.New("missing")
+	})
+	if err == nil {
+		t.Fatal("expected error for unknown profile")
+	}
+}
+
+func TestSpawner_useFallback_when_opener_fails(t *testing.T) {
+	dir := t.TempDir()
+	s := NewSpawner(config.TerminalConfig{
+		Emulator:    "wt",
+		FallbackDir: dir,
+	})
+	if goos != "windows" {
+		profiles := platformProfiles(func(string) (string, error) { return "", errors.New("missing") })
+		s.cfg.Emulator = profiles[0].ID
+	}
+	s.lookPath = func(string) (string, error) { return "", errors.New("missing") }
+	s.opener = func(string) error { return os.ErrPermission }
+
+	err := s.SpawnTUI(context.Background(), "/bin/clipboard-tui", "clip text")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !errors.Is(err, ErrUsedFallback) {
+		t.Fatalf("error = %v, want ErrUsedFallback", err)
+	}
+	if !strings.Contains(err.Error(), "fallback failed") {
+		t.Errorf("error = %v, want fallback failed detail", err)
+	}
+}
+
+func TestSpawner_Spawn_startCmd_error(t *testing.T) {
+	state := mockLookPathPreferLastProfile(t)
+	s := NewSpawner(config.TerminalConfig{Emulator: state.wantID})
+	s.lookPath = state.fn
+	s.startCmd = func(context.Context, string, ...string) error {
+		return errors.New("start failed")
+	}
+
+	_, err := s.Spawn(context.Background(), "echo hello")
+	if err == nil || err.Error() != "start failed" {
+		t.Fatalf("Spawn() error = %v, want start failed", err)
 	}
 }
 

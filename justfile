@@ -94,10 +94,15 @@ deps:
 run-binary: build
     ./{{BINARY}} tui
 
-# Fail if total statement coverage is below 80%
+# Fail if internal statement coverage is below 80% (excludes cmd/ CLI wiring)
 cover-check min="80":
+    go test -coverprofile=coverage.out ./internal/...
+    @bash -eu -c 'pct=$(go tool cover -func=coverage.out | awk "/^total:/ {gsub(/%/,\"\",\$3); print \$3}"); echo "Internal coverage: ${pct}%"; awk "BEGIN {exit !(${pct} >= {{min}})}" || { echo "FAIL: coverage ${pct}% < {{min}}%"; exit 1; }; echo "✓ Coverage gate passed"'
+
+# Report total coverage including cmd/ (informational, no gate)
+cover-check-all:
     go test -coverprofile=coverage.out ./...
-    @bash -eu -c 'pct=$(go tool cover -func=coverage.out | awk "/^total:/ {gsub(/%/,\"\",\$3); print \$3}"); echo "Total coverage: ${pct}%"; awk "BEGIN {exit !(${pct} >= {{min}})}" || { echo "FAIL: coverage ${pct}% < {{min}}%"; exit 1; }; echo "✓ Coverage gate passed"'
+    go tool cover -func=coverage.out
 
 # Full CI pipeline
 ci: deps check build

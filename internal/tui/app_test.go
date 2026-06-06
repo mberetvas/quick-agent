@@ -222,6 +222,101 @@ func TestModel_view_loadingResult(t *testing.T) {
 	}
 }
 
+func TestViewFromName(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  string
+		want   ViewType
+		wantOK bool
+	}{
+		{name: "result", input: models.ViewNameResult, want: ViewResult, wantOK: true},
+		{name: "unknown", input: "options", want: ViewInitial, wantOK: false},
+		{name: "empty", input: "", want: ViewInitial, wantOK: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := viewFromName(tt.input)
+			if got != tt.want || ok != tt.wantOK {
+				t.Errorf("viewFromName(%q) = (%v, %v), want (%v, %v)", tt.input, got, ok, tt.want, tt.wantOK)
+			}
+		})
+	}
+}
+
+func TestModel_view_errorWithoutModel(t *testing.T) {
+	m := testModel("hello")
+	m.PushView(ViewError)
+	m.ErrorModel = nil
+	if view := m.View(); view != "Error" {
+		t.Errorf("view = %q, want Error", view)
+	}
+}
+
+func TestModel_view_initial(t *testing.T) {
+	m := testModel("hello clipboard")
+	view := m.View()
+	if !strings.Contains(view, "hello clipboard") {
+		t.Errorf("initial view = %q", view)
+	}
+}
+
+func TestModel_showViewEvent_unknownNoop(t *testing.T) {
+	m := testModel("hello")
+	before := m.currentView
+	updated, cmd := m.Update(models.ShowViewEvent{View: "unknown"})
+	root := updated.(*Model)
+	if root.currentView != before {
+		t.Errorf("view changed from %v to %v", before, root.currentView)
+	}
+	if cmd != nil {
+		t.Fatal("expected nil cmd for unknown view")
+	}
+}
+
+func TestModel_showViewEvent_options(t *testing.T) {
+	m := testModel("hello")
+	updated, _ := m.Update(models.ShowOptionsEvent{})
+	root := updated.(*Model)
+	if root.currentView != ViewOptions {
+		t.Errorf("view = %v, want ViewOptions", root.currentView)
+	}
+}
+
+func TestModel_unknownKey_noop_on_options(t *testing.T) {
+	m := testModel("hello")
+	m.PushView(ViewOptions)
+	before := m.currentView
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyF1})
+	root := updated.(*Model)
+	if root.currentView != before {
+		t.Errorf("view changed from %v to %v on unknown key", before, root.currentView)
+	}
+}
+
+func TestModel_retryEvent(t *testing.T) {
+	m := testModel("hello")
+	m.PushView(ViewOptions)
+	updated, _ := m.Update(models.ActionSelectedEvent{Action: models.ActionRefine})
+	m = updated.(*Model)
+
+	updated, cmd := m.Update(models.RetryEvent{})
+	root := updated.(*Model)
+	if root.currentView != ViewOptions {
+		t.Errorf("view = %v, want ViewOptions after retry pop", root.currentView)
+	}
+	if cmd == nil {
+		t.Fatal("expected retry cmd")
+	}
+}
+
+func TestModel_view_default_unimplemented(t *testing.T) {
+	m := testModel("hello")
+	m.currentView = ViewType(99)
+	if view := m.View(); view != "View not implemented yet." {
+		t.Errorf("view = %q", view)
+	}
+}
+
 func TestOptions_view_lists_all_actions(t *testing.T) {
 	m := testModel("hello")
 	m.PushView(ViewOptions)

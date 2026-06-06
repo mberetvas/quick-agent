@@ -12,6 +12,85 @@ import (
 	"github.com/mberetvas/quick-agent/internal/config"
 )
 
+func TestNewClient_defaultURL(t *testing.T) {
+	client := NewClient(config.OllamaConfig{Model: "test"}, config.DefaultLLMConfig())
+	if client.cfg.URL != "http://localhost:11434" {
+		t.Errorf("URL = %q, want default localhost", client.cfg.URL)
+	}
+}
+
+func TestOllamaGenerate_emptyModel(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, `{"response":"","done":true}`)
+	}))
+	defer server.Close()
+
+	client := NewClient(config.OllamaConfig{URL: server.URL, Model: ""}, config.DefaultLLMConfig())
+	tokens, errs, err := client.Generate(context.Background(), "hi")
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+	for range tokens {
+	}
+	for err := range errs {
+		if err != nil {
+			t.Fatalf("stream error: %v", err)
+		}
+	}
+}
+
+func TestOllamaGenerate_malformedNDJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, `not-json`)
+		fmt.Fprintln(w, `{"response":"ok","done":true}`)
+	}))
+	defer server.Close()
+
+	client := NewClient(config.OllamaConfig{URL: server.URL, Model: "test"}, config.DefaultLLMConfig())
+	tokens, errs, err := client.Generate(context.Background(), "hi")
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+	var got string
+	for tok := range tokens {
+		got += tok
+	}
+	for err := range errs {
+		if err != nil {
+			t.Fatalf("stream error: %v", err)
+		}
+	}
+	if got != "ok" {
+		t.Errorf("got %q, want ok", got)
+	}
+}
+
+func TestOllamaGenerate_httpError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	client := NewClient(config.OllamaConfig{URL: server.URL, Model: "test"}, config.LLMConfig{
+		RetryAttempts: 1,
+	})
+	_, _, err := client.Generate(context.Background(), "hi")
+	if err == nil {
+		t.Fatal("expected error for HTTP 500")
+	}
+}
+
+func TestOllamaHealthCheck_invalidURL(t *testing.T) {
+	client := NewClient(config.OllamaConfig{URL: "://bad", Timeout: 1}, config.DefaultLLMConfig())
+	err := client.HealthCheck(context.Background())
+	if err == nil {
+		t.Fatal("expected healthcheck error for invalid URL")
+	}
+}
+
 func TestOllamaHealthCheck(t *testing.T) {
 	// Setup a local test HTTP server to mock Ollama /api/tags
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -149,6 +228,47 @@ func TestOllamaGenerateStream_ScannerError(t *testing.T) {
 		}
 	case <-time.After(1 * time.Second):
 		t.Fatal("timed out waiting for error reporting")
+	}
+}
+
+func TestOllamaGenerate_skips_malformed_ndjson(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, `not valid json`)
+		fmt.Fprintln(w, `{"response":"ok","done":true}`)
+	}))
+	defer server.Close()
+
+	client := NewClient(config.OllamaConfig{URL: server.URL, Model: "test"}, config.DefaultLLMConfig())
+	tokens, errs, err := client.Generate(context.Background(), "hi")
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+	var got string
+	for tok := range tokens {
+		got += tok
+	}
+	for err := range errs {
+		if err != nil {
+			t.Fatalf("stream error: %v", err)
+		}
+	}
+	if got != "ok" {
+		t.Errorf("got %q, want ok", got)
+	}
+}
+
+func TestOllamaGenerate_http_error_status(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+	}))
+	defer server.Close()
+
+	client := NewClient(config.OllamaConfig{URL: server.URL, Model: "test"}, config.DefaultLLMConfig())
+	_, _, err := client.Generate(context.Background(), "hi")
+	if err == nil {
+		t.Fatal("expected error for non-OK status")
 	}
 }
 
