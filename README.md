@@ -21,7 +21,7 @@ quick-agent runs as a lightweight background **daemon** that watches the clipboa
 - **Cross-platform** — Linux, macOS, and Windows
 - **Terminal auto-detection** — Windows Terminal, PowerShell, cmd, GNOME Terminal, Kitty, and more
 - **Fallback output** — if terminal spawn fails, writes result to a file and opens it with the OS handler
-- **Debug commands** — clipboard watch, hotkey test, LLM stream tracer, terminal spawn test
+- **Debug commands** — clipboard watch, hotkey test, terminal spawn test
 
 ---
 
@@ -76,11 +76,15 @@ To install the daemon as a login service:
 quick-agent [flags] <command>
 
 Commands:
-  daemon   Start the background clipboard + hotkey daemon
-  tui      Launch the terminal UI (stdin or --text)
-  config   Interactive setup wizard and configuration management
-  debug    Developer diagnostics (clipboard, hotkey, LLM, terminal)
-  version  Print version
+  daemon     Start the background clipboard + hotkey daemon
+  tui        Launch the terminal UI (stdin or --text)
+  refine     Refine text using the configured LLM
+  translate  Translate text using the configured LLM
+  summarize  Summarize text using the configured LLM
+  explain    Explain text or code using the configured LLM
+  config     Interactive setup wizard and configuration management
+  debug      Developer diagnostics (clipboard, hotkey, terminal)
+  version    Print version
 ```
 
 Global flags (all subcommands):
@@ -132,6 +136,52 @@ quick-agent config get-key openrouter   # retrieve key (or "not set")
 ```
 
 Running `quick-agent config` launches an interactive wizard where you can choose your LLM backend (Ollama or OpenRouter), configure models and API keys, and set the global hotkey. Settings are saved to `~/.quick-agent/config.json`; API keys are stored in the OS keyring.
+
+---
+
+## Actions
+
+`refine`, `translate`, `summarize`, and `explain` send text to the configured LLM and stream the result to stdout.
+
+**Argument input:**
+
+```bash
+quick-agent refine "Fix the grammar in this sentence."
+quick-agent summarize "Long article text goes here…"
+quick-agent explain "func main() { fmt.Println(\"hello\") }"
+```
+
+**Stdin pipe:**
+
+```bash
+cat notes.txt | quick-agent summarize
+git diff HEAD~1 | quick-agent explain
+```
+
+**Copy result to clipboard (`--copy`):**
+
+```bash
+quick-agent refine "Draft email text" --copy
+```
+
+**Specify target language for translate (`--language`):**
+
+```bash
+quick-agent translate "Hello, world!" --language French
+echo "Bonjour" | quick-agent translate --language English
+```
+
+**Verbose mode — show healthcheck, template, and rendered prompt (`--verbose`):**
+
+```bash
+quick-agent summarize "Article text" --verbose
+```
+
+**Override backend for a single call:**
+
+```bash
+quick-agent refine "Some text" --backend openrouter
+```
 
 ---
 
@@ -211,7 +261,7 @@ Environment variables override file values (file overrides built-in defaults):
 Test without the daemon:
 
 ```bash
-quick-agent debug llm "Summarize this paragraph" --backend ollama
+quick-agent summarize "Summarize this paragraph" --backend ollama
 ```
 
 ### OpenRouter (cloud)
@@ -226,7 +276,7 @@ quick-agent debug llm "Summarize this paragraph" --backend ollama
 3. Set `"backend": "openrouter"` and choose a `openrouter.model` (e.g. `mistralai/mistral-7b-instruct`)
 
 ```bash
-quick-agent debug llm "Hello" --backend openrouter
+quick-agent refine "Hello" --backend openrouter
 ```
 
 ### API keys and keyring
@@ -280,7 +330,6 @@ just build-dist     # multi-arch binaries for current OS → dist/
 ```bash
 quick-agent debug watch-clipboard    # print clipboard changes
 quick-agent debug hotkey             # print when hotkey fires
-quick-agent debug llm "text"         # stream LLM output to stdout
 quick-agent debug spawn-terminal --command "echo hello"
 ```
 

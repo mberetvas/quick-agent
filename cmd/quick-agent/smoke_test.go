@@ -91,10 +91,17 @@ func TestDebugSpawnTerminalRequiresCommand(t *testing.T) {
 	}
 }
 
+func TestDebugLLMRemoved(t *testing.T) {
+	for _, sub := range debugCmd.Commands() {
+		if sub.Name() == "llm" {
+			t.Fatal("debug llm should no longer be registered")
+		}
+	}
+}
+
 func TestDebugSubcommandHelp(t *testing.T) {
 	for _, args := range [][]string{
 		{"debug", "watch-clipboard", "--help"},
-		{"debug", "llm", "--help"},
 		{"debug", "hotkey", "--help"},
 		{"debug", "spawn-terminal", "--help"},
 	} {
