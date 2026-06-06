@@ -1,5 +1,7 @@
 # quick-agent
 
+[![CI](https://github.com/mberetvas/quick-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/mberetvas/quick-agent/actions/workflows/ci.yml)
+
 AI-powered clipboard supercharger. Copy text anywhere, press a global hotkey, pick an action in a terminal UI, and stream an LLM result back to your clipboard.
 
 quick-agent runs as a lightweight background **daemon** that watches the clipboard and listens for a hotkey. When triggered, it opens a new terminal window with a **Bubble Tea** TUI pre-loaded with your clipboard text. Choose refine, translate, summarize, or explain; the response streams token-by-token; copy the result with a single keystroke.
