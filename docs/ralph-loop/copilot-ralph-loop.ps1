@@ -27,10 +27,10 @@ param(
     [Parameter(Mandatory)]
     [string] $IssuesFolder,
 
-    [string] $Model = 'claude-opus-4.6',
+    [string] $Model = 'claude-sonnet-4.6',
 
     [ValidateSet('low', 'medium', 'high', 'xhigh')]
-    [string] $Effort = 'high'
+    [string] $Effort = 'medium'
 )
 
 Set-StrictMode -Version Latest
